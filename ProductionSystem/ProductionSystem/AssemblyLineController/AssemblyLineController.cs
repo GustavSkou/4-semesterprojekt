@@ -28,35 +28,11 @@ public class AssemblyLineController : IAssetController
 
         mqttClient.ApplicationMessageReceivedAsync += e =>
         {
-            Console.WriteLine("Received application message.");
-
-            var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-            object payloadData;
-            
-            try
-            {
-                payloadData = JsonSerializer.Deserialize<JsonElement>(payloadString);
-            }
-            catch
-            {
-                payloadData = payloadString;
-            }
-
-            var messageInfo = new
-            {
-                Topic = e.ApplicationMessage.Topic,
-                Payload = payloadData,
-                QoS = e.ApplicationMessage.QualityOfServiceLevel,
-                Retain = e.ApplicationMessage.Retain,
-                ContentType = e.ApplicationMessage.ContentType
-            };
-
-            messageInfo.DumpToConsole();
-            return Task.CompletedTask;
+            return HandleReceivedMessage(e);
         };
     }
 
-    async Task<bool> IAssetController.Connect()
+    public async Task<bool> Connect()
     {
         var mqttFactory = new MqttClientFactory();
         try
@@ -73,7 +49,7 @@ public class AssemblyLineController : IAssetController
         }
     }
 
-    async Task<bool> IAssetController.Disconnect()
+    public async Task<bool> Disconnect()
     {
         try
         {
@@ -88,27 +64,25 @@ public class AssemblyLineController : IAssetController
         }
     }
 
-    Task<string> IAssetController.ReadStatus()
+    public Task<string> ReadStatus()
     {
         throw new NotImplementedException();
     }
 
-    Task IAssetController.SendCommand(string command = "12345")
+    public Task SendCommand(string command = "12345")
     {
-        Dictionary<string, string> commandDict = new Dictionary<string, string>()
-        {
-            { "ProcessID", command }
-        };
+        Dictionary<string, string> payloadDictionary = new() { { "ProcessID", "123" } };
 
+        string payload = JsonSerializer.Serialize(payloadDictionary);
 
         var applicationMessage = new MqttApplicationMessageBuilder()
             .WithTopic("emulator/operation")
-            .WithPayload("123")
+            .WithPayload(payload)
             .Build();
         return Task.CompletedTask;
     }
 
-    async void SubribeToTopics()
+    private async void SubribeToTopics()
     {
         var topicFilter = mqttFactory.CreateTopicFilterBuilder().WithTopic("emulator/status").WithAtLeastOnceQoS();
 
@@ -119,6 +93,17 @@ public class AssemblyLineController : IAssetController
         Console.WriteLine("MQTT client subscribed to topic.");
 
         Console.WriteLine(JsonSerializer.Serialize(response, SerializerOptions));
+    }
+    
+    /*
+        Handle update on subribe topics 
+     */
+    private static Task HandleReceivedMessage(MqttApplicationMessageReceivedEventArgs e)
+    {
+        var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
 
+        Console.WriteLine("Received application message.");
+        Console.WriteLine(JsonSerializer.Deserialize<JsonElement>(payloadString));
+        return Task.CompletedTask;
     }
 }
