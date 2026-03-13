@@ -1,7 +1,10 @@
 <Solution>
   <Project Path="AgvPlugin/AgvPlugin.csproj" />
+  <Project Path="APIControllerPlugin/APIControllerPlugin.csproj" />
   <Project Path="AssemblyPlugin/AssemblyPlugin.csproj" />
   <Project Path="CommonAssetController/CommonAssetController.csproj" />
+  <Project Path="CommonProductionHandler/CommonProductionHandler.csproj" />
+  <Project Path="ProductionHandlerPlugin/ProductionHandlerPlugin.csproj" />
   <Project Path="ProductionSystem/ProductionSystem.csproj" />
   <Project Path="WarehousePlugin/WarehousePlugin.csproj" />
 </Solution>
