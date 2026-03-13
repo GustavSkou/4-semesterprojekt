@@ -69,19 +69,6 @@ public class AssemblyLineController : IAssetController
         throw new NotImplementedException();
     }
 
-    public Task SendCommand(string command, string[] args)
-    {
-        Dictionary<string, string> payloadDictionary = new() { { "ProcessID", "123" } };
-
-        string payload = JsonSerializer.Serialize(payloadDictionary);
-
-        var applicationMessage = new MqttApplicationMessageBuilder()
-            .WithTopic("emulator/operation")
-            .WithPayload(payload)
-            .Build();
-        return Task.CompletedTask;
-    }
-
     private async void SubribeToTopics()
     {
         var topicFilter = mqttFactory.CreateTopicFilterBuilder().WithTopic("emulator/status").WithAtLeastOnceQoS();
@@ -105,5 +92,23 @@ public class AssemblyLineController : IAssetController
         Console.WriteLine("Received application message.");
         Console.WriteLine(JsonSerializer.Deserialize<JsonElement>(payloadString));
         return Task.CompletedTask;
+    }
+
+    public Task SendCommand(AssetCommand command)
+    {
+        Dictionary<string, string> payloadDictionary = new() { { "ProcessID", "123" } };
+
+        string payload = JsonSerializer.Serialize(payloadDictionary);
+
+        var applicationMessage = new MqttApplicationMessageBuilder()
+            .WithTopic("emulator/operation")
+            .WithPayload(payload)
+            .Build();
+        return Task.CompletedTask;
+    }
+
+    public AssetEnum GetAssetEnum()
+    {
+        return AssetEnum.assembly;
     }
 }

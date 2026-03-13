@@ -4,7 +4,8 @@ namespace CommonAssetController
 	{
 		public Task<bool> Connect();
 		public Task<bool> Disconnect();
-		public Task SendCommand(string command, string[] args);
+		public Task SendCommand(AssetCommand command);
 		public Task<string> ReadStatus();
+		public AssetEnum GetAssetEnum();
 	}
 }

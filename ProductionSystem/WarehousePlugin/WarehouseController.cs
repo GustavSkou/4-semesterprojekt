@@ -4,7 +4,17 @@ using CommonAssetController;
 
 public class WarehouseController : IAssetController
 {
+    public AssetEnum GetAssetEnum()
+    {
+        return AssetEnum.warehouse;
+    }
+
     public Task SendCommand(string command, string[] args)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SendCommand(AssetCommand command)
     {
         throw new NotImplementedException();
     }

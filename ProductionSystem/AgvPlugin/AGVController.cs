@@ -26,6 +26,11 @@ public class AGVController : IAssetController
         throw new NotImplementedException();
     }
 
+    public AssetEnum GetAssetEnum()
+    {
+        return AssetEnum.agv;
+    }
+
     public async Task<string> ReadStatus()
     {
         var response = await httpClient.GetAsync($"{baseUrl}/status");
@@ -33,6 +38,11 @@ public class AGVController : IAssetController
     }
 
     public Task SendCommand(string command, string[] args)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SendCommand(AssetCommand command)
     {
         throw new NotImplementedException();
     }
