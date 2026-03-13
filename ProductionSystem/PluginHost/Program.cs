@@ -1,12 +1,12 @@
 ﻿namespace ProductionSystem
 {
     using CommonAssetController;
+    using CommonProductionHandler;
 
     internal class Program
     {
         static async Task Main(string[] args)
         {
-            Console.WriteLine("started");
             var controllers = ServiceLocator.Instance.LocateAll<IAssetController>();
             Console.WriteLine($"{controllers.Count}");
         }

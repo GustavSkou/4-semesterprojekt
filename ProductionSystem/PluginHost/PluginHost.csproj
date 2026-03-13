@@ -22,13 +22,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CommonAssetController\CommonAssetController.csproj" />
+    <ProjectReference Include="..\CommonProductionHandler\CommonProductionHandler.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
-  </ItemGroup>
 
-  <ItemGroup>
     <PluginProject Include="..\AgvPlugin\AgvPlugin.csproj" />
     <PluginProject Include="..\AssemblyPlugin\AssemblyPlugin.csproj" />
     <PluginProject Include="..\WarehousePlugin\WarehousePlugin.csproj" />
+    <PluginProject Include="..\PubSubControllerPlugin\PubSubControllerPlugin.csproj" />
+    <PluginProject Include="..\ProductionMonitoringPlugin\ProductionMonitoringPlugin.csproj" />
+    <PluginProject Include="..\ProductionHandlerPlugin\ProductionHandlerPlugin.csproj" />
+    <PluginProject Include="..\ProductionDataHandlerPlugin\ProductionDataHandlerPlugin.csproj" />
+    <PluginProject Include="..\APIControllerPlugin\APIControllerPlugin.csproj" />
   </ItemGroup>
 
   <Target Name="BuildAndCopyPlugins" AfterTargets="Build">
