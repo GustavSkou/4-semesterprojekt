@@ -13,20 +13,14 @@ public sealed class ServiceLocator
 
     private ServiceLocator()
     {
-        var pluginsDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Plugins"));
+        string pluginsDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Plugins"));
         Console.WriteLine(pluginsDir);
         if (!Directory.Exists(pluginsDir))
         {
             Console.WriteLine("Could not find Plugins folder");
             return;
         }
-
-        foreach (var dll in Directory.EnumerateFiles(pluginsDir, "*.dll"))
-        {
-            var asm = Assembly.LoadFrom(dll);
-            _pluginAssemblies.Add(asm);
-            Console.WriteLine($"loaded: {asm.FullName}");
-        }
+        ImportAssemblyPlugins(pluginsDir);
     }
 
     public IReadOnlyList<T> LocateAll<T>() where T : class
@@ -82,5 +76,20 @@ public sealed class ServiceLocator
             return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// Load all the assembly files into "_pluginAssemblies"
+    /// </summary>
+    /// <param name="pluginsDir"></param>
+    private void ImportAssemblyPlugins(string pluginsDir)
+    {
+        Console.WriteLine($"Loading assembly files");
+        foreach (var dll in Directory.EnumerateFiles(pluginsDir, "*.dll"))
+        {
+            var asm = Assembly.LoadFrom(dll);
+            _pluginAssemblies.Add(asm);
+            Console.WriteLine($"loaded: {asm.FullName}");
+        }
     }
 }
