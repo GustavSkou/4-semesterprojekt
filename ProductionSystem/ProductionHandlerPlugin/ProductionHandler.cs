@@ -19,45 +19,23 @@ public class ProductionHandler
         }
     }
 
-    public Task Reset()
+    public void StartProduction()
     {
-        var controllers = getAssetControllers();        
-        throw new NotImplementedException();
+        /*
+        get items ready
+        agv to warehouse
+        agv pick items
+        agv to assembly
+        agv put items
+        assembly start
+        agv to assembly
+        agv pick items
+        agv to warehouse
+        agv put items
+        warehouse insert items
+        */
     }
 
-    public Task Resume()
-    {
-        var controllers = getAssetControllers();
-        throw new NotImplementedException();
-    }
-
-    public Task SendCommand(ProductionCommand command)
-    {
-        switch (command.Name)
-        {
-            case "order":
-                OrderHandler.Instance.AddOrderCommandToQueue(command);
-            break;
-            
-            default:
-            break;
-        }
-
-        var controllers = getAssetControllers();
-        throw new NotImplementedException();
-    }
-
-    public Task Stop()
-    {
-        var controllers = getAssetControllers();
-        throw new NotImplementedException();
-    }
-
-    private void StartProduction()
-    {
-        
-    }
-    
     /// <summary>
     /// Returns a list of Warehouse, agv and assembly controllers.
     /// Which can be used though the geniaric interface IAssetController
