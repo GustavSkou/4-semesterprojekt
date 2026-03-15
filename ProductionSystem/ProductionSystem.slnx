@@ -1,10 +1,10 @@
 <Solution>
   <Project Path="PluginHost/PluginHost.csproj" />
+  <Project Path="Common.ProductionHandler/Common.ProductionHandler.csproj" />
 
   <Project Path="Common/Common.csproj" />
-  <Project Path="Common.AssetController/CommonAssetController.csproj" />
+  <Project Path="Common.AssetController/Common.AssetController.csproj" />
   <Project Path="Common.ProductionDataSource/Common.ProductionDataSource.csproj" />
-  <Project Path="Common.ProductionHandler/CommonProductionHandler.csproj" />
 
   <Project Path="AgvPlugin/AgvPlugin.csproj" />
   <Project Path="APIControllerPlugin/APIControllerPlugin.csproj" />

@@ -21,8 +21,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Common.AssetController\CommonAssetController.csproj" />
-    <ProjectReference Include="..\Common.ProductionHandler\CommonProductionHandler.csproj" />
+    <ProjectReference Include="..\Common.AssetController\Common.AssetController.csproj" />
+    <ProjectReference Include="..\Common.ProductionHandler\Common.ProductionHandler.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
 
     <PluginProject Include="..\AgvPlugin\AgvPlugin.csproj" />
@@ -36,9 +36,7 @@
   </ItemGroup>
 
   <Target Name="BuildAndCopyPlugins" AfterTargets="Build">
-    <MSBuild Projects="@(PluginProject)"
-             Targets="Build"
-             Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);OutputPath=bin\$(Configuration)\$(TargetFramework)\Plugins\;CopyLocalLockFileAssemblies=true" />
+    <MSBuild Projects="@(PluginProject)" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);OutputPath=bin\$(Configuration)\$(TargetFramework)\Plugins\;CopyLocalLockFileAssemblies=true" />
     <RemoveDir Directories="$(RepoPluginsDir)" />
     <MakeDir Directories="$(RepoPluginsDir)" />
     <ItemGroup>
