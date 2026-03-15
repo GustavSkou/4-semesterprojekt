@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-  <projectReference Include="..\Common\Common.csproj"/>
-    <projectReference Include="..\Common.ProductionDataSource\Common.ProductionDataSource.csproj"/>
+  <ProjectReference Include="..\Common.ProductionDataSource\Common.DataSource.csproj" />
+  <projectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
-﻿namespace ProductionMonitoringPlugin;
+﻿namespace MonitoringPlugin;
 
-public class Class1
+public class DataMonitor
 {
 
 }
