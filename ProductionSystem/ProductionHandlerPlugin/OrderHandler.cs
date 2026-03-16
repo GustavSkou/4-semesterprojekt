@@ -14,6 +14,8 @@ public class OrderHandler
 
     public Queue<Order> OrderQueue { get {return _orderQueue; } }
 
+    public event EventHandler NewOrder;
+
     private OrderHandler()
     {
         _orderQueue = new Queue<Order>();
@@ -23,6 +25,7 @@ public class OrderHandler
     {
         Order order = ParseCommandToOrder(command);
         _orderQueue.Append(order);
+        NewOrder.Invoke(this, null);
     }
 
     public Order ParseCommandToOrder(ProductionCommand command)

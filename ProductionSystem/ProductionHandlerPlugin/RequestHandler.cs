@@ -1,3 +1,4 @@
+using Common.Util;
 using CommonProductionHandler;
 
 namespace ProductionHandlerPlugin;
@@ -6,7 +7,15 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
 {
     public Task SendCommand(ProductionCommand command)
     {
-        throw new NotImplementedException();
+        switch (command.Name)
+        {
+            case "order":
+                OrderHandler.Instance.AddOrderCommandToQueue(command);
+                return Task.CompletedTask;
+            
+            default:
+                return Task.CompletedTask;
+        }
     }
 
     public Task Reset()
@@ -22,5 +31,10 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
     public Task Stop()
     {
         throw new NotImplementedException();
+    }
+
+    private ProductionHandler GetProductionHandler()
+    {
+        return ServiceLocator.Instance.LocateAll<ProductionHandler>()[0];
     }
 }

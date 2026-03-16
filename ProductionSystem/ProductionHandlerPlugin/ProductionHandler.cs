@@ -15,43 +15,41 @@ public class ProductionHandler : IProductionDataSource
 
     public ProductionHandler()
     {
+        OrderHandler.Instance.NewOrder += OnNewOrder();
+
         _controllerRegistry = new Dictionary<AssetEnum, IAssetController>();
-        foreach (IAssetController controller in getAssetControllers())
+        
+        foreach (IAssetController controller in GetAssetControllers())
         {
             controller.Connect();
             _controllerRegistry.Add(controller.GetAssetEnum(), controller);
         }
     }
 
+    /// <summary>
+    /// When a new order is added to orderhandler, this is called
+    /// </summary>
+    private EventHandler OnNewOrder()
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task StartProduction()
     {
-        await getController(AssetEnum.warehouse).SendCommand(new AssetCommand("get", new Item[0]));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("warehouse", null));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("pick", new Item[0]));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("assembly", null));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("put", null));
-        await getController(AssetEnum.assembly).SendCommand(new AssetCommand("start", null));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("assembly", null));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("pick", new Item[0]));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("warehouse", null));
-        await getController(AssetEnum.agv).SendCommand(new AssetCommand("put", null));
-        await getController(AssetEnum.warehouse).SendCommand(new AssetCommand("insert", new Item[0]));
+        await GetController(AssetEnum.warehouse).SendCommand(new AssetCommand("pickitem", new Item[0]));
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("MoveToStorageOperation", null));
 
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("PickWarehouseOperation", new Item[0]));
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("PutAssemblyOperation", null));
+        await GetController(AssetEnum.assembly).SendCommand(new AssetCommand("start", null));
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("PickAssemblyOperation", new Item[0]));
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("MoveToStorageOperation", null));
+        await GetController(AssetEnum.agv).SendCommand(new AssetCommand("PutWarehouseOperation", null));
+        await GetController(AssetEnum.warehouse).SendCommand(new AssetCommand("InsertItem", new Item[0]));
 
-
-        /*
-        get items ready
-        agv to warehouse
-        agv pick items
-        agv to assembly
-        agv put items
-        assembly start
-        agv to assembly
-        agv pick items
-        agv to warehouse
-        agv put items
-        warehouse insert items
-        */
+        ProductionComplete(new ProductionEvent());
     }
 
     private void ProductionComplete(ProductionEvent e)
@@ -65,12 +63,12 @@ public class ProductionHandler : IProductionDataSource
     /// Which can be used though the geniaric interface IAssetController
     /// </summary>
     /// <returns></returns>
-    private IReadOnlyList<IAssetController> getAssetControllers()
+    private IReadOnlyList<IAssetController> GetAssetControllers()
     {
         return ServiceLocator.Instance.LocateAll<IAssetController>();
     }
 
-    private IAssetController getController(AssetEnum assetEnum)
+    private IAssetController GetController(AssetEnum assetEnum)
     {
         IAssetController controller;
         if (_controllerRegistry.TryGetValue(assetEnum, out controller))
@@ -79,7 +77,7 @@ public class ProductionHandler : IProductionDataSource
         }
         else
         {
-            var iAssetController = getAssetControllers();
+            var iAssetController = GetAssetControllers();
             Dictionary<AssetEnum, IAssetController> controllerRegistry = new Dictionary<AssetEnum, IAssetController>();
 
             foreach (IAssetController c in iAssetController)
