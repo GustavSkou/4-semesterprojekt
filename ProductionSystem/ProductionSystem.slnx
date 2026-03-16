@@ -1,14 +1,19 @@
 <Solution>
-  <Project Path="AgvPlugin/AgvPlugin.csproj" />
-  <Project Path="APIControllerPlugin/APIControllerPlugin.csproj" />
-  <Project Path="AssemblyPlugin/AssemblyPlugin.csproj" />
-  <Project Path="Common/Common.csproj" />
-  <Project Path="CommonAssetController/CommonAssetController.csproj" />
-  <Project Path="CommonProductionHandler/CommonProductionHandler.csproj" />
-  <Project Path="ProductionDataHandlerPlugin/ProductionDataHandlerPlugin.csproj" />
-  <Project Path="ProductionHandlerPlugin/ProductionHandlerPlugin.csproj" />
   <Project Path="PluginHost/PluginHost.csproj" />
-  <Project Path="ProductionMonitoringPlugin/ProductionMonitoringPlugin.csproj" />
+  <Project Path="Common.MonitorDataSource/Common.MonitorDataSource.csproj" />
+  <Project Path="Common.ProductionDataSource/Common.DataSource.csproj" />
+  <Project Path="Common.ProductionHandler/Common.ProductionHandler.csproj" />
+  <Project Path="Common.PubSubDataSource/Common.PubSubDataSource.csproj" />
+
+  <Project Path="Common/Common.csproj" />
+  <Project Path="Common.AssetController/Common.AssetController.csproj" />
+
+  <Project Path="AgvPlugin/AgvPlugin.csproj" />
+  <Project Path="APIControllerPlugin/RestAPIPlugin.csproj" />
+  <Project Path="AssemblyPlugin/AssemblyPlugin.csproj" />
+  <Project Path="ProductionDataHandlerPlugin/DataHandlerPlugin.csproj" />
+  <Project Path="ProductionHandlerPlugin/ProductionHandlerPlugin.csproj" />
+  <Project Path="ProductionMonitoringPlugin/MonitoringPlugin.csproj" />
   <Project Path="PubSubControllerPlugin/PubSubControllerPlugin.csproj" />
   <Project Path="WarehousePlugin/WarehousePlugin.csproj" />
 </Solution>

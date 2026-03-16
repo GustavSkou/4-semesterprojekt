@@ -1,41 +1,69 @@
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.AspNetCore.Mvc;
+using CommonProductionHandler;
+using Common.Util;
+namespace APIController.Controllers;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+[ApiController]
+[Route("ProductionSystem")]
+public class Controller : ControllerBase
 {
-    app.MapOpenApi();
-}
+    public Controller()
+    {
+        
+    }
+    
+    [HttpPost("Command")]
+    public IActionResult PostCommand([FromBody] ProductionCommand command)
+    {
+        GetCommandableServices();
+        throw new NotImplementedException();
+    }
 
-app.UseHttpsRedirection();
+    [HttpPost("Resume")]
+    public IActionResult PostResume()
+    {
+        GetResumeableServices();
+        throw new NotImplementedException();
+    }
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    [HttpPost("Stop")]
+    public IActionResult PostStop()
+    {
+        GetStopableServices();
+        throw new NotImplementedException();
+        
+    }
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    [HttpPost("Reset")]
+    public IActionResult PostReset()
+    {
+        GetResetableServices();
+        throw new NotImplementedException();
+    }
 
-app.Run();
+    [HttpGet("TEST")]
+    public ActionResult<object> GetTest()
+    {
+        return "test";
+    }
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    private IReadOnlyList<ICommandable> GetCommandableServices()
+    {
+        return ServiceLocator.Instance.LocateAll<ICommandable>();
+    }
+
+    private IReadOnlyList<IResumable> GetResumeableServices()
+    {
+        return ServiceLocator.Instance.LocateAll<IResumable>();
+    }
+
+    private IReadOnlyList<IResetable> GetResetableServices()
+    {
+        return ServiceLocator.Instance.LocateAll<IResetable>();
+    }
+
+    private IReadOnlyList<IStopable> GetStopableServices()
+    {
+        return ServiceLocator.Instance.LocateAll<IStopable>();
+    }
 }

@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="MQTTnet" Version="5.1.0.1559" />
-    <ProjectReference Include="..\CommonAssetController\CommonAssetController.csproj" />
+    <ProjectReference Include="..\Common.AssetController\Common.AssetController.csproj" />
   </ItemGroup>
 
 </Project>

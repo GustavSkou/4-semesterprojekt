@@ -1,11 +1,17 @@
-﻿using CommonAssetController;
+﻿using Common.Util;
+using Common.Data;
+
+using CommonAssetController;
 using CommonProductionHandler;
+using Common.ProductionDataSource;
 
 namespace ProductionHandlerPlugin;
 
-public class ProductionHandler :IProductionHandler, IStopable
+public class ProductionHandler : IProductionDataSource
 {
     private Dictionary<AssetEnum, IAssetController> _controllerRegistry;
+
+    public event EventHandler<ProductionEvent> EventHandler; // raise event on this, to notify ProductionDataSource
 
     public ProductionHandler()
     {
@@ -16,35 +22,31 @@ public class ProductionHandler :IProductionHandler, IStopable
         }
     }
 
-    public Task Reset()
+
+
+    public void StartProduction()
     {
-        var controllers = getAssetControllers();        
-        throw new NotImplementedException();
+        /*
+        get items ready
+        agv to warehouse
+        agv pick items
+        agv to assembly
+        agv put items
+        assembly start
+        agv to assembly
+        agv pick items
+        agv to warehouse
+        agv put items
+        warehouse insert items
+        */
     }
 
-    public Task Resume()
+    private void ProductionComplete(ProductionEvent e)
     {
-        var controllers = getAssetControllers();
-        throw new NotImplementedException();
+        // raise event like this, eg notify data handler and pass Production event
+        EventHandler.Invoke(this, e);
     }
 
-    public Task SendCommand(ProductionCommand command)
-    {
-        var controllers = getAssetControllers();
-        throw new NotImplementedException();
-    }
-
-    public Task Stop()
-    {
-        var controllers = getAssetControllers();
-        throw new NotImplementedException();
-    }
-
-    private void StartProduction()
-    {
-        
-    }
-    
     /// <summary>
     /// Returns a list of Warehouse, agv and assembly controllers.
     /// Which can be used though the geniaric interface IAssetController
