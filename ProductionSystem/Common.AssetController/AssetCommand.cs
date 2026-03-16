@@ -1,17 +1,16 @@
+using Common.Data;
+
 public class AssetCommand
 {
-    AssetEnum target;
     string name; 
-    string payload;
+    Item[]? items;
 
-    public AssetEnum Target { get { return target; } }
     public string Name { get { return name; } }
-    public string Payload { get { return payload; } }
+    public Item[]? Items { get { return items; } }
 
-    public AssetCommand(AssetEnum target, string commandName, string payload)
+    public AssetCommand(string commandName, Item[] items)
     {
-        this.target = target;
         this.name = commandName;
-        this.payload = payload;
+        this.items = items;
     }
 }

@@ -18,12 +18,27 @@ public class ProductionHandler : IProductionDataSource
         _controllerRegistry = new Dictionary<AssetEnum, IAssetController>();
         foreach (IAssetController controller in getAssetControllers())
         {
+            controller.Connect();
             _controllerRegistry.Add(controller.GetAssetEnum(), controller);
         }
     }
 
-    public void StartProduction()
+    public async Task StartProduction()
     {
+        await getController(AssetEnum.warehouse).SendCommand(new AssetCommand("get", new Item[0]));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("warehouse", null));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("pick", new Item[0]));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("assembly", null));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("put", null));
+        await getController(AssetEnum.assembly).SendCommand(new AssetCommand("start", null));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("assembly", null));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("pick", new Item[0]));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("warehouse", null));
+        await getController(AssetEnum.agv).SendCommand(new AssetCommand("put", null));
+        await getController(AssetEnum.warehouse).SendCommand(new AssetCommand("insert", new Item[0]));
+
+
+
         /*
         get items ready
         agv to warehouse
@@ -53,5 +68,31 @@ public class ProductionHandler : IProductionDataSource
     private IReadOnlyList<IAssetController> getAssetControllers()
     {
         return ServiceLocator.Instance.LocateAll<IAssetController>();
+    }
+
+    private IAssetController getController(AssetEnum assetEnum)
+    {
+        IAssetController controller;
+        if (_controllerRegistry.TryGetValue(assetEnum, out controller))
+        {
+            return controller;
+        }
+        else
+        {
+            var iAssetController = getAssetControllers();
+            Dictionary<AssetEnum, IAssetController> controllerRegistry = new Dictionary<AssetEnum, IAssetController>();
+
+            foreach (IAssetController c in iAssetController)
+            {
+                _controllerRegistry.TryAdd(c.GetAssetEnum(), c);
+            }
+
+            _controllerRegistry = controllerRegistry;
+
+            if (!_controllerRegistry.TryGetValue(assetEnum, out controller))
+                throw new Exception();
+            
+            return controller;
+        }
     }
 }

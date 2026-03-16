@@ -43,8 +43,35 @@ public class AGVController : IAssetController
         return await response.Content.ReadAsStringAsync();
     }
 
-    public Task SendCommand(string command, string[] args)
+    public Task SendCommand(AssetCommand command)
     {
+        switch (command.Name)
+        {
+            case "MoveToChargerOperation":
+                return MoveToCharing();
+
+            case "MoveToAssemblyOperation":
+                return MoveToAssembly();
+
+            case "MoveToStorageOperation":
+                return MoveToWarehouse();
+
+            case "PutAssemblyOperation":
+                return Putdown();
+
+            case "PickAssemblyOperation":
+                return PickUp(new Queue<Item>(command.Items));
+
+            case "PickWarehouseOperation":
+                return PickUp(new Queue<Item>(command.Items));
+
+            case "PutWarehouseOperation":
+                return Putdown();
+
+            default:
+                return Task.CompletedTask;
+        }
+
         throw new NotImplementedException();
     }
 
@@ -54,6 +81,11 @@ public class AGVController : IAssetController
     }
 
     private Task MoveToAssembly()
+    {
+        throw new NotImplementedException();
+    }
+
+    private Task MoveToCharing()
     {
         throw new NotImplementedException();
     }
@@ -83,10 +115,6 @@ public class AGVController : IAssetController
         return Task.FromResult(putdownItems);
     }
 
-    public Task SendCommand(AssetCommand command)
-    {
-        throw new NotImplementedException();
-    }
 }
 /*
 
