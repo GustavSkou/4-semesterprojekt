@@ -10,12 +10,13 @@ namespace ProductionHandlerPlugin;
 public class ProductionHandler : IProductionDataSource
 {
     private Dictionary<AssetEnum, IAssetController> _controllerRegistry;
-
     public event EventHandler<ProductionEvent> EventHandler; // raise event on this, to notify ProductionDataSource
+    private Order _currentOrder;
+    private ProductionState _state;
 
     public ProductionHandler()
     {
-        OrderHandler.Instance.NewOrder += OnNewOrder();
+        OrderHandler.Instance.NewOrder += OnNewOrder;
 
         _controllerRegistry = new Dictionary<AssetEnum, IAssetController>();
         
@@ -29,13 +30,34 @@ public class ProductionHandler : IProductionDataSource
     /// <summary>
     /// When a new order is added to orderhandler, this is called
     /// </summary>
-    private EventHandler OnNewOrder()
+    private void OnNewOrder(object sender, EventArgs e)
     {
-        throw new NotImplementedException();
+        if (_state != ProductionState.idle) {
+            return;
+        }
+
+        if (OrderHandler.Instance.OrderQueue.Count > 0)
+            _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
+    }
+
+    private void OnProductionComplete(ProductionEvent e)
+    {
+        _state = ProductionState.idle;
+        // raise event like this, eg notify data handler and pass Production event
+        EventHandler?.Invoke(this, e);
+
+        if (OrderHandler.Instance.OrderQueue.Count > 0)
+            _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
     }
 
     public async Task StartProduction()
     {
+        _state = ProductionState.executing;
+        await HandleProduction();
+        OnProductionComplete(new ProductionEvent());
+    }
+
+    private async Task<Task> HandleProduction() {
         await GetController(AssetEnum.warehouse).SendCommand(new AssetCommand("pickitem", new Item[0]));
         await GetController(AssetEnum.agv).SendCommand(new AssetCommand("MoveToStorageOperation", null));
 
@@ -49,13 +71,7 @@ public class ProductionHandler : IProductionDataSource
         await GetController(AssetEnum.agv).SendCommand(new AssetCommand("PutWarehouseOperation", null));
         await GetController(AssetEnum.warehouse).SendCommand(new AssetCommand("InsertItem", new Item[0]));
 
-        ProductionComplete(new ProductionEvent());
-    }
-
-    private void ProductionComplete(ProductionEvent e)
-    {
-        // raise event like this, eg notify data handler and pass Production event
-        EventHandler.Invoke(this, e);
+        return Task.CompletedTask;
     }
 
     /// <summary>
