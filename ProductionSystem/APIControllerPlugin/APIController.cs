@@ -19,7 +19,10 @@ public class Controller : ControllerBase
         if (command.Name == null)
             return BadRequest(command);
         
-        //var result = GetCommandableServices()[0].SendCommand(command);
+        foreach (var service in GetCommandableServices())
+        {
+            service.SendCommand(command);
+        }
 
         Console.WriteLine(command.Name);
 

@@ -3,10 +3,11 @@ using Common.Data;
 
 using CommonAssetController;
 using Common.ProductionDataSource;
+using CommonProductionHandler;
 
 namespace ProductionHandlerPlugin;
 
-public class ProductionHandler : IProductionDataSource
+public class ProductionHandler : IProductionDataSource, ICommandable
 {
     private Dictionary<AssetEnum, IAssetController> _controllerRegistry;
     public event EventHandler<ProductionEvent> EventHandler; // raise event on this, to notify ProductionDataSource
@@ -112,6 +113,22 @@ public class ProductionHandler : IProductionDataSource
                 throw new Exception();
 
             return controller;
+        }
+    }
+
+    public async Task SendCommand(ProductionCommand command)
+    {
+        if (command.Name == "GetItemsReady" && command.Parameters != null)
+        {
+            string components = command.Parameters["components"];
+            string[] trayIds = components.Split(',');
+
+            Item[] items = trayIds
+                .Select(id => new Item { Id = int.Parse(id.Trim()) })
+                .ToArray();
+
+            await GetController(AssetEnum.warehouse)
+                .SendCommand(new AssetCommand("PickItem", items));
         }
     }
 }

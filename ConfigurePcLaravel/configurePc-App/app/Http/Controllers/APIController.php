@@ -3,26 +3,29 @@
 namespace App\Http\Controllers;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class APIController extends Controller
 {
     public function sendCommand(Request $request)
     {
-        // Validating incoming request data
         $validatedData = $request->validate([
             'command' => 'required|string',
             'parameters' => 'nullable|array',
         ]);
 
-        // Processes the command and parameters
         $command = $validatedData['command'];
         $parameters = $validatedData['parameters'] ?? [];
 
-        // Success response
+
+        $response = Http::post(env('PRODUCTION_API_URL') . '/ProductionSystem/Command', [
+            'Name' => $command,
+            'Parameters' => $parameters,
+        ]);
+
         return response()->json([
-            'message' => 'Command received successfully',
-            'command' => $command,
-            'parameters' => $parameters,
-        ], 200);
+            'message' => 'Command sent successfully',
+            'response' => $response->json(),
+        ], $response->status());
     }
 }
