@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using Common.Data;
 using CommonProductionHandler;
 
@@ -9,11 +7,11 @@ public class OrderHandler
 {
     private static OrderHandler _instance = new OrderHandler();
 
-    public static OrderHandler Instance { get {return _instance; } }
+    public static OrderHandler Instance { get { return _instance; } }
 
     private Queue<Order> _orderQueue;
 
-    public Queue<Order> OrderQueue { get {return _orderQueue; } }
+    public Queue<Order> OrderQueue { get { return _orderQueue; } }
 
     public event EventHandler NewOrder;
 
@@ -33,5 +31,5 @@ public class OrderHandler
     {
         //command.Parameters;
         throw new NotImplementedException();
-    } 
+    }
 }

@@ -2,7 +2,6 @@
 using Common.Data;
 
 using CommonAssetController;
-using CommonProductionHandler;
 using Common.ProductionDataSource;
 
 namespace ProductionHandlerPlugin;
@@ -19,7 +18,7 @@ public class ProductionHandler : IProductionDataSource
         OrderHandler.Instance.NewOrder += OnNewOrder;
 
         _controllerRegistry = new Dictionary<AssetEnum, IAssetController>();
-        
+
         foreach (IAssetController controller in GetAssetControllers())
         {
             controller.Connect();
@@ -28,16 +27,18 @@ public class ProductionHandler : IProductionDataSource
     }
 
     /// <summary>
-    /// When a new order is added to orderhandler, this is called
+    /// When a new order is added to orderhandler's queue, this is invoked
     /// </summary>
     private void OnNewOrder(object sender, EventArgs e)
     {
-        if (_state != ProductionState.idle) {
+        if (_state != ProductionState.idle)
             return;
-        }
 
         if (OrderHandler.Instance.OrderQueue.Count > 0)
+        {
             _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
+            StartProduction();
+        }
     }
 
     private void OnProductionComplete(ProductionEvent e)
@@ -47,17 +48,21 @@ public class ProductionHandler : IProductionDataSource
         EventHandler?.Invoke(this, e);
 
         if (OrderHandler.Instance.OrderQueue.Count > 0)
+        {
             _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
+            StartProduction();
+        }
     }
 
-    public async Task StartProduction()
+    private async Task StartProduction()
     {
         _state = ProductionState.executing;
         await HandleProduction();
         OnProductionComplete(new ProductionEvent());
     }
 
-    private async Task<Task> HandleProduction() {
+    private async Task<Task> HandleProduction()
+    {
         await GetController(AssetEnum.warehouse).SendCommand(new AssetCommand("pickitem", new Item[0]));
         await GetController(AssetEnum.agv).SendCommand(new AssetCommand("MoveToStorageOperation", null));
 
@@ -105,7 +110,7 @@ public class ProductionHandler : IProductionDataSource
 
             if (!_controllerRegistry.TryGetValue(assetEnum, out controller))
                 throw new Exception();
-            
+
             return controller;
         }
     }
