@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\APIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -10,3 +11,5 @@ use Illuminate\Support\Facades\Route;
 | Add routes here as user stories are implemented.
 |
 */
+
+Route::post('/production/command', [APIController::class, 'sendCommand']);
