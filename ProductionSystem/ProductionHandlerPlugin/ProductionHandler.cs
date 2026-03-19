@@ -8,11 +8,9 @@ namespace ProductionHandlerPlugin;
 
 public class ProductionHandler : IProductionDataSource
 {
-    
-
     private Dictionary<AssetEnum, IAssetController> _controllerRegistry;
     public event EventHandler<ProductionEvent>? EventHandler; // raise event on this, to notify ProductionDataSource
-    private Order? _currentOrder = null;
+    private OrderDTO? _currentOrder = null;
     private ProductionState _state;
 
     public ProductionHandler()
@@ -25,13 +23,13 @@ public class ProductionHandler : IProductionDataSource
         {
             controller.ProductionEventHandler += OnProductionEvent;
             //controller.Connect();
-            //_controllerRegistry.Add(controller.GetAssetEnum(), controller);     
+            _controllerRegistry.Add(controller.GetAssetEnum(), controller);
         }
     }
 
     private void OnProductionEvent(object? sender, ProductionEvent e)
     {
-        
+        EventHandler?.Invoke(this, e);
     }
 
     /// <summary>
@@ -40,7 +38,7 @@ public class ProductionHandler : IProductionDataSource
     private void OnNewOrder(object? sender, EventArgs e)
     {
         Console.WriteLine("New Order Event in ProductionHandler");
-        /*
+
         if (_state != ProductionState.idle)
             return;
 
@@ -49,7 +47,7 @@ public class ProductionHandler : IProductionDataSource
             _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
             StartProduction();
         }
-        */
+
     }
 
     private void OnProductionComplete(ProductionEvent e)
@@ -74,7 +72,7 @@ public class ProductionHandler : IProductionDataSource
 
     private async Task<Task> HandleProduction()
     {
-        await GetController(AssetEnum.warehouse).SendCommand(new AssetCommand("pickitem", new Item[0]));
+        await GetController(AssetEnum.warehouse).SendCommand(new AssetCommand("pickitem", _currentOrder.Items));
         await GetController(AssetEnum.agv).SendCommand(new AssetCommand("MoveToStorageOperation", null));
 
         await GetController(AssetEnum.agv).SendCommand(new AssetCommand("PickWarehouseOperation", new Item[0]));

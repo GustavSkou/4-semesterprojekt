@@ -12,7 +12,7 @@ public class Controller : ControllerBase
     {
         Console.WriteLine(this.Url);
     }
-    
+
     [HttpPost("Command")]
     public IActionResult PostCommand([FromBody] ProductionCommand command)
     {
@@ -20,21 +20,11 @@ public class Controller : ControllerBase
 
         if (command.Name == null)
             return BadRequest(command);
-        
+
         GetCommandableServices()[0].SendCommand(command);
 
         return Ok(command);
     }
-
-    /*
-    
-    {
-        public required string Name { get; set; }
-        public Dictionary<string,string>? Parameters {get; set;}
-    
-    }
-    
-    */
 
     [HttpPost("Resume")]
     public IActionResult PostResume()
@@ -48,7 +38,7 @@ public class Controller : ControllerBase
     {
         GetStopableServices();
         throw new NotImplementedException();
-        
+
     }
 
     [HttpPost("Reset")]

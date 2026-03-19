@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Common.Data;
 using CommonProductionHandler;
 
@@ -9,33 +10,38 @@ public class OrderHandler
 
     public static OrderHandler Instance { get { return _instance; } }
 
-    private Queue<Order> _orderQueue;
+    private Queue<OrderDTO> _orderQueue;
 
-    public Queue<Order> OrderQueue { get { return _orderQueue; } }
+    public Queue<OrderDTO> OrderQueue { get { return _orderQueue; } }
 
     public event EventHandler? NewOrder;
 
     private OrderHandler()
     {
-        _orderQueue = new Queue<Order>();
+        _orderQueue = new Queue<OrderDTO>();
     }
 
     public void AddOrderCommandToQueue(ProductionCommand command)
     {
-        //Order order = ParseCommandToOrder(command);
-        //_orderQueue.Append(order);
+        OrderDTO order = ParseCommandToOrder(command);
+        _orderQueue.Append(order);
 
-        
         NewOrder?.Invoke(this, EventArgs.Empty);
-        Console.WriteLine("Add order to queue");
-        
-        
+        Console.WriteLine($"Add order: {order.Id} to queue");
     }
 
-    public Order ParseCommandToOrder(ProductionCommand command)
+    public OrderDTO ParseCommandToOrder(ProductionCommand command)
     {
-        //command.Parameters;
-        //throw new NotImplementedException();
-        return new Order();
+        if (command.Parameters is null)
+            throw new ArgumentException("Command has no parameters");
+
+        var id = command.Parameters["id"].GetInt32();
+
+        var itemIds = command.Parameters["items"].Deserialize<int[]>() ?? Array.Empty<int>();
+        var items = itemIds
+            .Select(x => new Item { TrayId = x })
+            .ToArray();
+
+        return new OrderDTO(id, items);
     }
 }
