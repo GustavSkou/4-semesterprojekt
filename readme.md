@@ -1,4 +1,4 @@
-## 🚀 Run the C# Project
+##  Run the C# Project
 
 ```bash
 dotnet run --project ProductionSystem/PluginHost/PluginHost.csproj
@@ -6,7 +6,7 @@ dotnet run --project ProductionSystem/PluginHost/PluginHost.csproj
 
 ---
 
-## 🔐 Login (Operator)
+##  Login (Operator)
 
 **Email:**
 
