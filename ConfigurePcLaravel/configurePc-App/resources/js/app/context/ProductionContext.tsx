@@ -90,7 +90,11 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   const login = useCallback((email: string, password: string): boolean => {
-    if (email && password) {
+
+     const VALID_EMAIL = 'operator@example.com';
+  const VALID_PASSWORD = '1234';
+
+    if (email === VALID_EMAIL && password === VALID_PASSWORD) {
       setIsAuthenticated(true);
       addLog('success', 'Auth', 'Login', `Operator logged in: ${email}`);
       return true;
