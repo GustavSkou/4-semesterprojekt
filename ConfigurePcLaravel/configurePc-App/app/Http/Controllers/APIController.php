@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
 
 class APIController extends Controller
 {
@@ -24,5 +26,26 @@ class APIController extends Controller
             'command' => $command,
             'parameters' => $parameters,
         ], 200);
+    }
+
+    public function sendOrder(Request $request) {
+        $validated = $request->validate([
+            'id' => 'required|integer',
+            'trayIds' => 'required|array',
+            'trayIds.*' => 'integer',
+        ]);
+
+        $url = env('PRODUCTION_API_URL') . '/ProductionSystem/Command';
+
+        $response = Http::post($url, [
+            'Name' => 'order',
+            'Parameters' => [
+                    'id' => (string) $validated['id'],
+                    'trayIds' => implode(',', $validated['trayIds']),
+            ]
+        ]);
+
+        return response()->json($response->json(), $response->status());
+
     }
 }

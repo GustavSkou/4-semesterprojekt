@@ -13,3 +13,4 @@ use App\Http\Controllers\APIController;
 */
 
 Route::post('/production/command', [APIController::class, 'sendCommand']);
+Route::post('/orders', [APIController::class, 'sendOrder']);
