@@ -12,6 +12,6 @@ class Level extends Model
 
     public function logs()
     {
-        return $this->hasMany(Log::class, 'id', 'level_id');
+        return $this->hasMany(Log::class, 'level_id', 'id');
     }
 }

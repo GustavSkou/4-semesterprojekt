@@ -12,6 +12,6 @@ class Type extends Model
 
     public function logs()
     {
-        return $this->hasMany(Log::class, 'id', 'type_id');
+        return $this->hasMany(Log::class, 'type_id', 'id');
     }
 }

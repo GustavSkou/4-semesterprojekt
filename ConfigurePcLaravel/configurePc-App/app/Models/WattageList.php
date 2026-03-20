@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class WattageList extends Model
 {
     protected $fillable = [
-        'name',
-        'value',
+        'wattage',
         'component_id',
     ];
 

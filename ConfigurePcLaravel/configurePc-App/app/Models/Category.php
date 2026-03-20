@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Source extends Model
+class Category extends Model
 {
     protected $fillable = [
         'name',
     ];
 
-    public function logs()
+    public function components()
     {
-        return $this->hasMany(Log::class, 'source_id', 'id');
+        return $this->hasMany(Component::class, 'category_id', 'id');
     }
 }

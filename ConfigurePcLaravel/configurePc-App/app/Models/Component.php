@@ -8,9 +8,15 @@ class Component extends Model
 {
     protected $fillable = [
         'name',
+        'tray_id',
+        'category_id',
         'price',
-        'category',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id', 'id');
+    }
 
     public function computers()
     {

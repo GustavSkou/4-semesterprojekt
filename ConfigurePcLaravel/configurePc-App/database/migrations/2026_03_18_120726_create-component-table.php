@@ -14,7 +14,8 @@ return new class extends Migration
          Schema::create('components', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('location')->nullable();
+            $table->integer('tray_id')->nullable();
+            $table->foreignId('category_id')->nullable()->constrained('categories');
             $table->decimal('price', 10, 2);
             $table->timestamps();
         });

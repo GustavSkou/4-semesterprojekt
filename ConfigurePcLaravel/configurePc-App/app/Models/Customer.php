@@ -9,15 +9,11 @@ class Customer extends Model
     protected $fillable = [
         'name',
         'email',
-        'password',
+        'address',
     ];
 
-    protected $hidden = [
-        'password',
-    ];
-
-    public function computers()
+    public function orders()
     {
-        return $this->hasMany(Computer::class);
+        return $this->hasMany(Order::class, 'customer_id', 'id');
     }
 }

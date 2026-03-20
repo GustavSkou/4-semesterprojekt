@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('computer_component');
+        Schema::dropIfExists('computer_component_list');
     }
 };

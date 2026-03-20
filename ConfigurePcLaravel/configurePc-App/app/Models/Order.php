@@ -19,6 +19,6 @@ class Order extends Model
 
     public function computer()
     {
-        return $this->hasOne(Computer::class, 'id', 'order_id');
+        return $this->hasOne(Computer::class, 'order_id', 'id');
     }
 }

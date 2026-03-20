@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Computer extends Model
 {
     protected $fillable = [
-        'name',
+        'tray_id',
         'order_id',
     ];
 
