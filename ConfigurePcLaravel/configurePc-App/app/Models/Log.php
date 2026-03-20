@@ -16,16 +16,16 @@ class Log extends Model
 
     public function level()
     {
-        return $this->belongsTo(Level::class);
+        return $this->belongsTo(Level::class, 'level_id', 'id');
     }
 
     public function source()
     {
-        return $this->belongsTo(Source::class);
+        return $this->belongsTo(Source::class, 'source_id', 'id');
     }
 
     public function type()
     {
-        return $this->belongsTo(Type::class);
+        return $this->belongsTo(Type::class, 'type_id', 'id');
     }
 }

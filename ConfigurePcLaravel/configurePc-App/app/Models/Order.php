@@ -14,11 +14,11 @@ class Order extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class, 'customer_id', 'id');
     }
 
     public function computer()
     {
-        return $this->hasOne(Computer::class);
+        return $this->hasOne(Computer::class, 'id', 'order_id');
     }
 }
