@@ -23,6 +23,8 @@ public class AssemblyLineController : IAssetController
 
     public event EventHandler<ProductionEvent>? ProductionEventHandler;
 
+    public string GetAssetName { get { return "assembly"; } }
+
     public AssemblyLineController()
     {
         mqttFactory = new MqttClientFactory();
@@ -84,7 +86,7 @@ public class AssemblyLineController : IAssetController
 
         Console.WriteLine(JsonSerializer.Serialize(response, SerializerOptions));
     }
-    
+
     /*
         Handle update on subribe topics 
      */
@@ -108,10 +110,5 @@ public class AssemblyLineController : IAssetController
             .WithPayload(payload)
             .Build();
         return Task.CompletedTask;
-    }
-
-    public AssetEnum GetAssetEnum()
-    {
-        return AssetEnum.assembly;
     }
 }

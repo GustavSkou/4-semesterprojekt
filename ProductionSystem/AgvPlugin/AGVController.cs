@@ -31,10 +31,7 @@ public class AGVController : IAssetController
         throw new NotImplementedException();
     }
 
-    public AssetEnum GetAssetEnum()
-    {
-        return AssetEnum.agv;
-    }
+    public string GetAssetName { get { return "agv"; } }
 
     public async Task<string> ReadStatus()
     {
@@ -56,9 +53,6 @@ public class AGVController : IAssetController
         using HttpResponseMessage response = await httpClient.PostAsync(
             "todos",
             jsonContent);
-
-        response.EnsureSuccessStatusCode()
-            .WriteRequestToConsole();
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
         Console.WriteLine($"{jsonResponse}\n");

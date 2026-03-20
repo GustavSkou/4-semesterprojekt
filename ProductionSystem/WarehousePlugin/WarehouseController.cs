@@ -7,10 +7,7 @@ public class WarehouseController : IAssetController
 {
     public event EventHandler<ProductionEvent>? ProductionEventHandler;
 
-    public AssetEnum GetAssetEnum()
-    {
-        return AssetEnum.warehouse;
-    }
+    public string GetAssetName { get { return "warehouse"; } }
 
     public Task SendCommand(string command, string[] args)
     {

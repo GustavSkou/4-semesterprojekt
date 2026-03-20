@@ -9,5 +9,5 @@ public interface IAssetController
 
 	// To notify "ProductHandler" that new production data is avaliable, use ".invoke" on the eventhandler 
 	public event EventHandler<ProductionEvent> ProductionEventHandler;
-	public AssetEnum GetAssetEnum();
+	public string GetAssetName { get; }
 }
