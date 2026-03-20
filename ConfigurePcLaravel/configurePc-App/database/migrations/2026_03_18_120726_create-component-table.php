@@ -11,7 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
+         Schema::create('components', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->integer('tray_id')->nullable();
+            $table->foreignId('category_id')->nullable()->constrained('categories');
+            $table->decimal('price', 10, 2);
+            $table->timestamps();
+        });
     }
 
     /**
@@ -19,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('components');
     }
 };

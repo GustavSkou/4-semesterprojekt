@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('orders', function (Blueprint $table) {
+      Schema::create('logs', function (Blueprint $table) {
             $table->id();
-            $table->date('order_date');
-            $table->string('status');
-            $table->foreignId('customer_id')->constrained('customers');
+            $table->timestamp('timestamp')->useCurrent();
+            $table->text('description')->nullable();
+            $table->foreignId('level_id')->constrained('levels');
+            $table->foreignId('source_id')->constrained('sources');
+            $table->foreignId('type_id')->constrained('types');
             $table->timestamps();
         });
     }
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('logs');
     }
 };
