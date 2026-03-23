@@ -24,7 +24,7 @@ public class OrderHandler
     public void AddOrderCommandToQueue(ProductionCommand command)
     {
         OrderDTO order = ParseCommandToOrder(command);
-        _orderQueue.Append(order);
+        _orderQueue.Enqueue(order);
 
         NewOrder?.Invoke(this, EventArgs.Empty);
         Console.WriteLine($"Add order: {order.Id} to queue");
