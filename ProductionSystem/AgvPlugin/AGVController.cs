@@ -3,11 +3,9 @@ namespace AGVController;
 using CommonAssetController;
 using Common.Data;
 using System.Net.Http;
-using System.Text.Json;
-using System.Text;
-using System.ComponentModel.Design;
 
-public class AGVController : IAssetController
+
+public partial class AGVController : IAssetController
 {
     private readonly HttpClient httpClient;
     private readonly string baseUrl = "http://localhost:8082/v1";
@@ -22,52 +20,16 @@ public class AGVController : IAssetController
         _heldItems = new Queue<Item>();
     }
 
-    public async Task<bool> Connect()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> Disconnect()
-    {
-        throw new NotImplementedException();
-    }
-
     public string GetAssetName { get { return "agv"; } }
 
-    private async Task<StatusDTO?> ReadStatus()
+    public async Task<bool> Connect()
     {
-        var response = await httpClient.GetAsync($"{baseUrl}/status");
-        StatusDTO? status = JsonSerializer.Deserialize<StatusDTO>(await response.Content.ReadAsStringAsync());
-
-        return status;
+        return true;
     }
 
-    private async Task LoadProgramAsync(string programName)
+    public async Task<bool> Disconnect()
     {
-        var payload = new Dictionary<string, string>
-        {
-            ["Program name"] = programName
-        };
-
-        var json = JsonSerializer.Serialize(payload);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        using var response = await httpClient.PutAsync($"{baseUrl}/status", content);
-        response.EnsureSuccessStatusCode();
-    }
-
-    private async Task LoadExecuteStateAsync()
-    {
-        var payload = new Dictionary<string, string>
-        {
-            ["state"] = "2"
-        };
-
-        var json = JsonSerializer.Serialize(payload);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        using var response = await httpClient.PutAsync($"{baseUrl}/status", content);
-        response.EnsureSuccessStatusCode();
+        return true;
     }
 
     public Task SendCommand(AssetCommand command)
@@ -111,34 +73,6 @@ public class AGVController : IAssetController
         return await WhileMoving();
     }
 
-    private async Task<bool> Move(string programName)
-    {
-        var status = await ReadStatus();
-
-        if (status == null)
-            return false;
-
-        if (status.State != 1)
-            return false;
-        
-        await LoadProgramAsync(programName);
-        await LoadExecuteStateAsync();
-        return true;
-    }
-
-    private async Task<bool> WhileMoving()
-    {
-        try {
-            while ((await ReadStatus()).State == 2) {
-                Thread.Sleep(250);
-            }
-            return true;
-        }
-        catch (NullReferenceException ex) {
-            return false;
-        }
-    }
-
     private async Task<bool> MoveToAssembly(AssetCommand command)
     {
         await Move(command.Name);
@@ -177,7 +111,6 @@ public class AGVController : IAssetController
     }
 
 }
-
 
 /*
 
