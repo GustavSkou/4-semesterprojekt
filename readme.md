@@ -12,6 +12,7 @@ dotnet run --project ProductionSystem/PluginHost/PluginHost.csproj
 
 ```text
 operator@example.com
+
 ```
 
 **Password:**

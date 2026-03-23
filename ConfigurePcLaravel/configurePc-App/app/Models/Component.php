@@ -8,6 +8,7 @@ class Component extends Model
 {
     protected $fillable = [
         'name',
+        'brand',
         'tray_id',
         'category_id',
         'price',

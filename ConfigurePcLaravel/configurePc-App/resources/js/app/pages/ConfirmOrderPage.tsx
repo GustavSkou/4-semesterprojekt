@@ -79,14 +79,14 @@ export function ConfirmOrderPage() {
     return errs;
   };
 
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async () => {
     const errs = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
     }
     const info: OrderInfo = { name: name.trim(), email: email.trim(), address: address.trim() };
-    placeOrder(info);
+    await placeOrder(info);
     navigate('/order-status');
   };
 
@@ -203,8 +203,8 @@ export function ConfirmOrderPage() {
 
                   {/* Specs row */}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                    {component.specs.slice(0, 4).map(spec => (
-                      <div key={spec.label} className="flex items-center gap-1">
+                    {component.specs.slice(0, 4).map((spec, i) => (
+                      <div key={spec.label + i} className="flex items-center gap-1">
                         <span className="text-[10px] text-gray-700">{spec.label}:</span>
                         <span className="text-[10px] text-slate-500">{spec.value}</span>
                       </div>

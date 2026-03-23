@@ -4,7 +4,7 @@ import {
   AlertTriangle, Trash2, Info,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { allComponents, categories, PCComponent, checkCompatibility, getTotalPowerDraw } from '../data/components';
+import { categories, PCComponent, checkCompatibility, getTotalPowerDraw } from '../data/components';
 import { useApp } from '../context/AppContext';
 import { categoryIcons } from '../constants/categoryIcons';
 
@@ -77,8 +77,8 @@ function ComponentCard({
 
         {/* Specs */}
         <div className="flex flex-col gap-1 flex-1">
-          {component.specs.slice(0, 3).map(spec => (
-            <div key={spec.label} className="flex justify-between gap-2">
+          {component.specs.slice(0, 3).map((spec, i) => (
+            <div key={spec.label + i} className="flex justify-between gap-2">
               <span className="text-xs text-gray-600">{spec.label}</span>
               <span className={`text-xs text-right ${isCompatible ? 'text-slate-400' : 'text-gray-700'}`}>
                 {spec.value}
@@ -118,7 +118,7 @@ function ComponentCard({
 }
 
 export function ConfigurePage() {
-  const { selectedComponents, selectComponent, deselectComponent } = useApp();
+  const { selectedComponents, selectComponent, deselectComponent, components } = useApp();
   const [activeCategory, setActiveCategory] = useState('cpu');
   const navigate = useNavigate();
 
@@ -130,7 +130,7 @@ export function ConfigurePage() {
   const selectedCount = Object.values(selectedComponents).filter(Boolean).length;
   const powerPercent = psuWattage > 0 ? Math.min((totalPower / psuWattage) * 100, 100) : 0;
 
-  const activeCategoryComponents = allComponents.filter(c => c.categoryId === activeCategory);
+  const activeCategoryComponents = components.filter(c => c.categoryId === activeCategory);
 
   const handleSelect = (component: PCComponent) => {
     if (selectedComponents[component.categoryId]?.id === component.id) {
@@ -169,12 +169,11 @@ export function ConfigurePage() {
               </div>
             </div>
           </div>
-
           {/* Category tabs */}
           <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
             {categories.map(cat => {
               const sel = selectedComponents[cat.id];
-              const catComponents = allComponents.filter(c => c.categoryId === cat.id);
+              const catComponents = components.filter(c => c.categoryId === cat.id);
               const compatibleCount = catComponents.filter(c => {
                 const { compatible } = checkCompatibility(c, selectedComponents);
                 return compatible;

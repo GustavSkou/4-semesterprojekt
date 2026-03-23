@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { PCComponent } from '../data/components';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { PCComponent, mapApiComponent } from '../data/components';
 
 export type OrderInfo = {
   name: string;
@@ -22,12 +22,13 @@ type AppContextType = {
   selectComponent: (component: PCComponent) => void;
   deselectComponent: (categoryId: string) => void;
   clearConfiguration: () => void;
+  components: PCComponent[];
 
   // Order
   orderInfo: OrderInfo | null;
   orderStatus: number;
   hasActiveOrder: boolean;
-  placeOrder: (info: OrderInfo) => void;
+  placeOrder: (info: OrderInfo) => Promise<void>;
   cancelOrder: () => void;
   advanceOrderStatus: () => void; // demo helper
 };
@@ -56,7 +57,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const selectComponent = (component: PCComponent) => {
     setSelectedComponents(prev => ({ ...prev, [component.categoryId]: component }));
   };
-
+  
   const deselectComponent = (categoryId: string) => {
     setSelectedComponents(prev => ({ ...prev, [categoryId]: null }));
   };
@@ -65,7 +66,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSelectedComponents({ ...emptySelection });
   };
 
-  const placeOrder = (info: OrderInfo) => {
+  const placeOrder = async (info: OrderInfo) => {
+    const trayIds = Object.values(selectedComponents)
+      .filter(Boolean)
+      .map(c => c!.trayId);
+
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: Math.floor(Date.now() / 1000), trayIds }),
+    });
+
     setOrderInfo(info);
     setOrderStatus(0);
     setHasActiveOrder(true);
@@ -81,12 +92,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setOrderStatus(prev => Math.min(prev + 1, ORDER_STATUSES.length - 1));
   };
 
+  const [components, setComponents] = useState<PCComponent[]>([]);
+
+  useEffect(() => {
+    fetch('/api/components')
+      .then(r => r.json())
+      .then(data => setComponents(data.map(mapApiComponent)));
+  }, []);
+
   return (
     <AppContext.Provider value={{
       selectedComponents,
       selectComponent,
       deselectComponent,
       clearConfiguration,
+      components,
       orderInfo,
       orderStatus,
       hasActiveOrder,
@@ -98,6 +118,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     </AppContext.Provider>
   );
 }
+
+
 
 export function useApp() {
   const ctx = useContext(AppContext);

@@ -40,8 +40,8 @@ class APIController extends Controller
         $response = Http::post($url, [
             'Name' => 'order',
             'Parameters' => [
-                    'id' => (string) $validated['id'],
-                    'trayIds' => implode(',', $validated['trayIds']),
+                'id'    => $validated['id'],
+                'items' => $validated['trayIds'],
             ]
         ]);
 

@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\APIController;
+use App\Http\Controllers\ComponentController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -14,3 +16,5 @@ use App\Http\Controllers\APIController;
 
 Route::post('/production/command', [APIController::class, 'sendCommand']);
 Route::post('/orders', [APIController::class, 'sendOrder']);
+
+Route::get('components', [ComponentController::class, 'index']);

@@ -2,26 +2,39 @@
 
 using Common.Data;
 using CommonAssetController;
+using System.Net;
 
 public class WarehouseController : IAssetController
 {
     public event EventHandler<ProductionEvent>? ProductionEventHandler;
 
+    private HttpClient _httpClient = new HttpClient();
+    private readonly string _url = "http://localhost:8081/Service.asmx";
+
     public string GetAssetName { get { return "warehouse"; } }
 
-    public Task SendCommand(string command, string[] args)
+    public async Task SendCommand(AssetCommand command)
     {
-        throw new NotImplementedException();
-    }
+        foreach (var item in command.Items ?? [])
+        {
+            string soapEnvelope = $@"
+                <Envelope xmlns=""http://schemas.xmlsoap.org/soap/envelope/"">
+                    <Body>
+                        <PickItem xmlns=""http://tempuri.org/"">
+                            <trayId>{item.TrayId}</trayId>
+                        </PickItem>
+                    </Body>
+                </Envelope>";
 
-    public Task SendCommand(AssetCommand command)
-    {
-        throw new NotImplementedException();
+            var content = new StringContent(soapEnvelope, System.Text.Encoding.UTF8, "text/xml");
+            var response = await _httpClient.PostAsync(_url, content);
+            response.EnsureSuccessStatusCode();
+        }
     }
 
     Task<bool> IAssetController.Connect()
     {
-        throw new NotImplementedException();
+        return Task.FromResult(true);
     }
 
     Task<bool> IAssetController.Disconnect()
