@@ -11,7 +11,7 @@ public class ProductionHandler : IProductionDataSource
     private Dictionary<string, IAssetController> _controllerRegistry;
     public event EventHandler<ProductionEvent>? EventHandler; // raise event on this, to notify ProductionDataSource
     private OrderDTO? _currentOrder = null;
-    private ProductionState _state;
+    private ProductionState _state = ProductionState.idle;
 
     public ProductionHandler()
     {
@@ -42,12 +42,12 @@ public class ProductionHandler : IProductionDataSource
         if (_state != ProductionState.idle)
             return;
 
+
         if (OrderHandler.Instance.OrderQueue.Count > 0)
         {
             _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
             StartProduction();
         }
-
     }
 
     private void OnProductionComplete(ProductionEvent e)
@@ -64,9 +64,10 @@ public class ProductionHandler : IProductionDataSource
 
     private async Task StartProduction()
     {
+        Console.WriteLine($"Starting production! order: {_currentOrder.Id}");
         _state = ProductionState.executing;
-        await HandleProduction();
-        OnProductionComplete(new ProductionEvent());
+        //await HandleProduction();
+        //OnProductionComplete(new ProductionEvent());
     }
 
     private async Task<Task> HandleProduction()

@@ -3,10 +3,9 @@ namespace AGVController;
 using CommonAssetController;
 using Common.Data;
 using System.Net.Http;
-using System.Text.Json;
-using System.Text;
 
-public class AGVController : IAssetController
+
+public partial class AGVController : IAssetController
 {
     private readonly HttpClient httpClient;
     private readonly string baseUrl = "http://localhost:8082/v1";
@@ -21,50 +20,16 @@ public class AGVController : IAssetController
         _heldItems = new Queue<Item>();
     }
 
-    public async Task<bool> Connect()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> Disconnect()
-    {
-        throw new NotImplementedException();
-    }
-
     public string GetAssetName { get { return "agv"; } }
 
-    public async Task<string> ReadStatus()
+    public async Task<bool> Connect()
     {
-        var response = await httpClient.GetAsync($"{baseUrl}/status");
-        return await response.Content.ReadAsStringAsync();
+        return true;
     }
 
-    static async Task PostAsync(HttpClient httpClient)
+    public async Task<bool> Disconnect()
     {
-        using StringContent jsonContent = new(
-            JsonSerializer.Serialize(new
-            {
-                Programname = "MoveToAssemblyOperation",
-                State = 1
-            }),
-            Encoding.UTF8,
-            "application/json");
-
-        using HttpResponseMessage response = await httpClient.PostAsync(
-            "todos",
-            jsonContent);
-
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"{jsonResponse}\n");
-
-        // Expected output:
-        //   POST https://jsonplaceholder.typicode.com/todos HTTP/1.1
-        //   {
-        //     "userId": 77,
-        //     "id": 201,
-        //     "title": "write code sample",
-        //     "completed": false
-        //   }
+        return true;
     }
 
     public Task SendCommand(AssetCommand command)
@@ -72,13 +37,13 @@ public class AGVController : IAssetController
         switch (command.Name)
         {
             case "MoveToChargerOperation":
-                return MoveToCharing();
+                return MoveToCharing(command);
 
             case "MoveToAssemblyOperation":
-                return MoveToAssembly();
+                return MoveToAssembly(command);
 
             case "MoveToStorageOperation":
-                return MoveToWarehouse();
+                return MoveToWarehouse(command);
 
             case "PutAssemblyOperation":
                 return Putdown();
@@ -92,26 +57,32 @@ public class AGVController : IAssetController
             case "PutWarehouseOperation":
                 return Putdown();
 
+            case "test":
+                Console.WriteLine("SUCCESS");
+                break;
+
             default:
-                return Task.CompletedTask;
+                return Task.CompletedTask;     
         }
-
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
-    private Task MoveToWarehouse()
+    private async Task<bool> MoveToWarehouse(AssetCommand command)
     {
-        throw new NotImplementedException();
+        await Move(command.Name);
+        return await WhileMoving();
     }
 
-    private Task MoveToAssembly()
+    private async Task<bool> MoveToAssembly(AssetCommand command)
     {
-        throw new NotImplementedException();
+        await Move(command.Name);
+        return await WhileMoving();
     }
 
-    private Task MoveToCharing()
+    private async Task<bool> MoveToCharing(AssetCommand command)
     {
-        throw new NotImplementedException();
+        await Move(command.Name);
+        return await WhileMoving();
     }
 
     // pick
@@ -140,6 +111,7 @@ public class AGVController : IAssetController
     }
 
 }
+
 /*
 
 MoveToChargerOperation  - Move the AGV to the charging station.
