@@ -8,6 +8,7 @@
 
   <ItemGroup>
   <ProjectReference Include="..\Common.ProductionDataSource\Common.DataSource.csproj" />
+  <projectReference Include="..\Common.Presistence\Common.Presistence.csproj" />
   <projectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 
