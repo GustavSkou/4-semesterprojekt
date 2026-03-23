@@ -3,6 +3,7 @@
 using Common.Util;
 using Common.Data;
 using Common.ProductionDataSource;
+using Common.Presistence;
 public class ProductionDataHandler
 {
     public ProductionDataHandler()
@@ -18,5 +19,10 @@ public class ProductionDataHandler
     private IReadOnlyList<IProductionDataSource> GetProductionDataSources()
     {
         return ServiceLocator.Instance.LocateAll<IProductionDataSource>();
+    }
+
+    private IReadOnlyList<IPersistence> GetPersistenceServices()
+    {
+        return ServiceLocator.Instance.LocateAll<IPersistence>();
     }
 }
