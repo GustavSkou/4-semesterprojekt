@@ -89,7 +89,7 @@ public sealed class ServiceLocator
     private void ImportAssemblyPlugins(string pluginsDir)
     {
         Console.WriteLine($"Loading assembly files");
-        foreach (var dll in Directory.EnumerateFiles(pluginsDir, "*.dll"))
+        foreach (var dll in Directory.EnumerateFiles(pluginsDir, "*Plugin.dll"))
         {
             Assembly asm;
             try

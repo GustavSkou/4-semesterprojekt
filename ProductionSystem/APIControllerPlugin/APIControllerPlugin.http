@@ -1,7 +1,6 @@
 @APIControllerPlugin_HostAddress = http://localhost:5027
 
-GET {{APIControllerPlugin_HostAddress}}/weatherforecast/
-Accept: application/json
+
 
 ###
 
