@@ -13,7 +13,7 @@ public class WarehouseController : IAssetController
 
     public string GetAssetName { get { return "warehouse"; } }
 
-    public async Task SendCommand(AssetCommand command)
+    public async Task<bool> SendCommand(AssetCommand command)
     {
         foreach (var item in command.Items ?? [])
         {
@@ -30,6 +30,7 @@ public class WarehouseController : IAssetController
             var response = await _httpClient.PostAsync(_url, content);
             response.EnsureSuccessStatusCode();
         }
+        return true;
     }
 
     Task<bool> IAssetController.Connect()

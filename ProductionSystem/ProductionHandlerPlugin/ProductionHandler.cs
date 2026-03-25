@@ -61,18 +61,17 @@ public class ProductionHandler : IProductionDataSource
             StartProduction();
         }
     }
-
     private async Task StartProduction()
     {
         Console.WriteLine($"Starting production! order: {_currentOrder.Id}");
         _state = ProductionState.executing;
-        //await HandleProduction();
-        //OnProductionComplete(new ProductionEvent());
+        await HandleProduction();
+        OnProductionComplete(new ProductionEvent());
     }
 
     private async Task<Task> HandleProduction()
     {
-        await GetController("warehouse").SendCommand(new AssetCommand("pickitem", _currentOrder.Items));
+        await GetController("warehouse").SendCommand(new AssetCommand("PickItem", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
 
         await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", new Item[0]));
