@@ -91,7 +91,15 @@ public sealed class ServiceLocator
         Console.WriteLine($"Loading assembly files");
         foreach (var dll in Directory.EnumerateFiles(pluginsDir, "*.dll"))
         {
-            var asm = Assembly.LoadFrom(dll);
+            Assembly asm;
+            try
+            {
+                asm = Assembly.LoadFrom(dll);
+            } catch (Exception ex)
+            {
+                continue;
+            }
+
             _pluginAssemblies.Add(asm);
             if (asm.FullName == null)
                 continue;
