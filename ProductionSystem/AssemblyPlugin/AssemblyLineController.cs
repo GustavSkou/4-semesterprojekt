@@ -99,7 +99,7 @@ public class AssemblyLineController : IAssetController
         return Task.CompletedTask;
     }
 
-    public Task SendCommand(AssetCommand command)
+    public async Task<bool> SendCommand(AssetCommand command)
     {
         Dictionary<string, string> payloadDictionary = new() { { "ProcessID", "123" } };
 
@@ -109,6 +109,6 @@ public class AssemblyLineController : IAssetController
             .WithTopic("emulator/operation")
             .WithPayload(payload)
             .Build();
-        return Task.CompletedTask;
+        return true;
     }
 }

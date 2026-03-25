@@ -32,61 +32,68 @@ public partial class AGVController : IAssetController
         return true;
     }
 
-    public Task SendCommand(AssetCommand command)
+    public async Task<bool> SendCommand(AssetCommand command)
     {
-        switch (command.Name)
+        switch (command.Name) 
         {
             case "MoveToChargerOperation":
-                return MoveToCharing(command);
+                return await MoveToCharing(command);
 
             case "MoveToAssemblyOperation":
-                return MoveToAssembly(command);
+                return await MoveToAssembly(command);
 
             case "MoveToStorageOperation":
-                return MoveToWarehouse(command);
+                return await MoveToWarehouse(command);
 
             case "PutAssemblyOperation":
-                return Putdown();
+                return await Putdown();
 
             case "PickAssemblyOperation":
-                return PickUp(new Queue<Item>(command.Items));
+                return await PickUp(new Queue<Item>(command.Items));
 
             case "PickWarehouseOperation":
-                return PickUp(new Queue<Item>(command.Items));
+                return await PickUp(new Queue<Item>(command.Items));
 
             case "PutWarehouseOperation":
-                return Putdown();
+                return await Putdown();
 
             case "test":
+                ProductionEventHandler?.Invoke(this, new ProductionEvent()
+                {
+                    DateAndTime = DateTime.Now,
+                    Description = "prod event test",
+                    Source = "AGV",
+                    Type = "prod event test",
+                    Level = "prod event test"
+                });
                 Console.WriteLine("SUCCESS");
-                break;
+                return true;
 
             default:
-                return Task.CompletedTask;     
+                return false;     
         }
-        return Task.CompletedTask;
     }
 
     private async Task<bool> MoveToWarehouse(AssetCommand command)
     {
-        await Move(command.Name);
+        await ExecuteMovementCommand(command.Name);
         return await WhileMoving();
     }
 
     private async Task<bool> MoveToAssembly(AssetCommand command)
     {
-        await Move(command.Name);
+        await ExecuteMovementCommand(command.Name);
         return await WhileMoving();
     }
 
     private async Task<bool> MoveToCharing(AssetCommand command)
     {
-        await Move(command.Name);
+        await ExecuteMovementCommand(command.Name);
         return await WhileMoving();
     }
 
     // pick
-    private Task PickUp(Queue<Item> items)
+    private async Task<bool> PickUp(Queue<Item> items)
     {
         while (items.TryDequeue(out Item item))
         {
@@ -94,11 +101,11 @@ public partial class AGVController : IAssetController
             _heldItems.Enqueue(item);
         }
 
-        return Task.CompletedTask;
+        return true;
     }
 
     // put down all items held
-    private Task<Queue<Item>> Putdown()
+    private async Task<bool> Putdown()
     {
         Queue<Item> putdownItems = new Queue<Item>();
 
@@ -107,25 +114,16 @@ public partial class AGVController : IAssetController
             putdownItems.Enqueue(item);
         }
 
-        return Task.FromResult(putdownItems);
+        return true;
     }
-
 }
 
 /*
-
-MoveToChargerOperation  - Move the AGV to the charging station.
-
-MoveToAssemblyOperation - Move the AGV to the assembly station.
-
-MoveToStorageOperation  - Move the AGV to the warehouse.
-
-PutAssemblyOperation    - Activate the robot arm to pick payload from AGV and place it at the assembly station.
-
-PickAssemblyOperation   - Activate the robot arm to pick payload at the assembly station and place it on the AGV.
-
-PickWarehouseOperation  - Activate the robot arm to pick payload from the warehouse outlet.
-
-PutWarehouseOperation   - Activate the robot arm to place an item at the warehouse inlet.
-
+    MoveToChargerOperation  - Move the AGV to the charging station.
+    MoveToAssemblyOperation - Move the AGV to the assembly station.
+    MoveToStorageOperation  - Move the AGV to the warehouse.
+    PutAssemblyOperation    - Activate the robot arm to pick payload from AGV and place it at the assembly station.
+    PickAssemblyOperation   - Activate the robot arm to pick payload at the assembly station and place it on the AGV.
+    PickWarehouseOperation  - Activate the robot arm to pick payload from the warehouse outlet.
+    PutWarehouseOperation   - Activate the robot arm to place an item at the warehouse inlet.
 */
