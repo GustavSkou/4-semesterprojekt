@@ -98,7 +98,7 @@ public sealed class ServiceLocator
 
             string asmName = asm.FullName.Split(',')[0];
 
-            _pluginRegistry.Add(asmName, asm);
+            _pluginRegistry.TryAdd(asmName, asm);
             Console.WriteLine($"loaded: {asmName}");
         }
     }
