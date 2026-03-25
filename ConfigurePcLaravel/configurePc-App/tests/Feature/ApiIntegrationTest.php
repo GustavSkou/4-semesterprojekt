@@ -107,7 +107,7 @@
           });
       }
 
-      // Lille helper: Saetter env-variablen, saa testen kan finde URL'en.
+      // Lille helper: Sætter env-variablen, saa testen kan finde URL'en.
       private function setProductionApiUrl(string $url): void
       {
           putenv("PRODUCTION_API_URL={$url}");
