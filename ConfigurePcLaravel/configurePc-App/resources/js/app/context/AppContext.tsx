@@ -71,10 +71,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .filter(Boolean)
       .map(c => c!.trayId);
 
+    const orderId = Math.floor(Date.now() / 1000);
+    console.log('Placing order:', { orderId, trayIds });
+
     await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: Math.floor(Date.now() / 1000), trayIds }),
+      body: JSON.stringify({ id: orderId, trayIds }),
     });
 
     setOrderInfo(info);
