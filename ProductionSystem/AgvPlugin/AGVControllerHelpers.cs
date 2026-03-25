@@ -1,34 +1,60 @@
 namespace AGVController;
 using System.Text.Json;
 using System.Text;
+using System;
+using System.Timers;
+using System.Globalization;
 
 public partial class AGVController
 {
-    private async Task<bool> Move(string programName)
+    private async Task<bool> ExecuteCommand(string programName)
     {
         var status = await ReadStatus();
 
         if (status == null)
             return false;
 
-        if (status.State != 1)
+        if (status.state != 1)
             return false;
+
         
         await LoadProgramAsync(programName);
-        await LoadExecuteStateAsync();
+        ExecuteCommandEvent(programName);
         return true;
     }
 
-    private async Task<bool> WhileMoving()
+    private async Task<bool> WhileDoing()
     {
-        try {
-            while ((await ReadStatus()).State == 2) {
-                Thread.Sleep(250);
+        StatusDTO? status;
+        while (true)
+        {
+            try {
+                status = await ReadStatus();
+                Console.WriteLine(status.state);
+            } catch {
+                return false;
             }
-            return true;
-        }
-        catch (NullReferenceException ex) {
-            return false;
+
+            if (status == null)
+                return false;
+
+            if (status.state == 1)
+            {
+                ProductionEventHandler?.Invoke(this, new Common.Data.ProductionEvent()
+                {
+                    DateAndTime = ConvertTimestampToDateTime(status.timeStamp),
+                    Description = "agv is idle",
+                    Source = GetAssetName,
+                    Type = "command",
+                    Level = "low"
+                });
+                return true;
+            } 
+            
+            if (status.state == 3)
+                return false;
+            
+            await Task.Delay(250);
         }
     }
 
@@ -36,7 +62,7 @@ public partial class AGVController
     {
         var response = await httpClient.GetAsync($"{baseUrl}/status");
         StatusDTO? status = JsonSerializer.Deserialize<StatusDTO>(await response.Content.ReadAsStringAsync());
-
+        //Console.WriteLine(status.state.ToString());
         return status;
     }
 
@@ -44,7 +70,8 @@ public partial class AGVController
     {
         var payload = new Dictionary<string, string>
         {
-            ["Program name"] = programName
+            ["Program name"] = programName,
+            ["State"] = "1"
         };
 
         var json = JsonSerializer.Serialize(payload);
@@ -54,17 +81,19 @@ public partial class AGVController
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task LoadExecuteStateAsync()
+    private static DateTime ConvertTimestampToDateTime(string timestamp)
     {
-        var payload = new Dictionary<string, string>
+        if (long.TryParse(timestamp, out var unixValue))
         {
-            ["state"] = "2"
-        };
+            if (timestamp.Length >= 13)
+                return DateTimeOffset.FromUnixTimeMilliseconds(unixValue).UtcDateTime;
 
-        var json = JsonSerializer.Serialize(payload);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            return DateTimeOffset.FromUnixTimeSeconds(unixValue).UtcDateTime;
+        }
 
-        using var response = await httpClient.PutAsync($"{baseUrl}/status", content);
-        response.EnsureSuccessStatusCode();
+        if (DateTime.TryParse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedDateTime))
+            return parsedDateTime;
+
+        return DateTime.UtcNow;
     }
 }

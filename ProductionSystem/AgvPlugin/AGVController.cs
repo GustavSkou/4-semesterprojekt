@@ -10,14 +10,14 @@ public partial class AGVController : IAssetController
     private readonly HttpClient httpClient;
     private readonly string baseUrl = "http://localhost:8082/v1";
 
-    private Queue<Item> _heldItems;
+    private List<Item> _heldItems;
 
     public event EventHandler<ProductionEvent>? ProductionEventHandler;
 
     public AGVController()
     {
         httpClient = new HttpClient();
-        _heldItems = new Queue<Item>();
+        _heldItems = new List<Item>();
     }
 
     public string GetAssetName { get { return "agv"; } }
@@ -46,27 +46,32 @@ public partial class AGVController : IAssetController
                 return await MoveToWarehouse(command);
 
             case "PutAssemblyOperation":
-                return await Putdown();
+                return await Putdown(command);
 
             case "PickAssemblyOperation":
-                return await PickUp(new Queue<Item>(command.Items));
+                if (command.Items == null)
+                    return false;
+
+                return await PickUp(command);
 
             case "PickWarehouseOperation":
-                return await PickUp(new Queue<Item>(command.Items));
+                if (command.Items == null)
+                    return false;
+
+                return await PickUp(command);
 
             case "PutWarehouseOperation":
-                return await Putdown();
+                return await Putdown(command);
 
             case "test":
                 ProductionEventHandler?.Invoke(this, new ProductionEvent()
                 {
                     DateAndTime = DateTime.Now,
                     Description = "prod event test",
-                    Source = "AGV",
+                    Source = GetAssetName,
                     Type = "prod event test",
                     Level = "prod event test"
                 });
-                Console.WriteLine("SUCCESS");
                 return true;
 
             default:
@@ -76,45 +81,58 @@ public partial class AGVController : IAssetController
 
     private async Task<bool> MoveToWarehouse(AssetCommand command)
     {
-        await ExecuteMovementCommand(command.Name);
-        return await WhileMoving();
+        await ExecuteCommand(command.Name);
+        return await WhileDoing();
     }
 
     private async Task<bool> MoveToAssembly(AssetCommand command)
     {
-        await ExecuteMovementCommand(command.Name);
-        return await WhileMoving();
+        await ExecuteCommand(command.Name);
+        return await WhileDoing();
     }
+
+    
 
     private async Task<bool> MoveToCharing(AssetCommand command)
     {
-        await ExecuteMovementCommand(command.Name);
-        return await WhileMoving();
+        await ExecuteCommand(command.Name);
+        return await WhileDoing();
     }
 
     // pick
-    private async Task<bool> PickUp(Queue<Item> items)
+    private async Task<bool> PickUp(AssetCommand command)
     {
-        while (items.TryDequeue(out Item item))
+        foreach (var item in command.Items)
         {
-            // await pick up action
-            _heldItems.Enqueue(item);
+            await ExecuteCommand(command.Name);
+            await WhileDoing();
+            _heldItems.Add(item);
         }
-
         return true;
     }
 
     // put down all items held
-    private async Task<bool> Putdown()
+    private async Task<bool> Putdown(AssetCommand command)
     {
-        Queue<Item> putdownItems = new Queue<Item>();
-
-        while (_heldItems.TryDequeue(out Item item))
+        foreach (var item in _heldItems)
         {
-            putdownItems.Enqueue(item);
+            await ExecuteCommand(command.Name);
+            await WhileDoing();
         }
-
+        _heldItems.Clear();
         return true;
+    }
+
+    private void ExecuteCommandEvent(string commandName)
+    {
+        ProductionEventHandler?.Invoke(this, new ProductionEvent()
+        {
+            DateAndTime = DateTime.Now,
+            Description = commandName,
+            Source = GetAssetName,
+            Type = "command",
+            Level = "low"
+        });
     }
 }
 
