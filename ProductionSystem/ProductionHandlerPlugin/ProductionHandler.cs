@@ -29,7 +29,8 @@ public class ProductionHandler : IProductionDataSource
 
     private void OnProductionEvent(object? sender, ProductionEvent e)
     {
-        EventHandler?.Invoke(this, e);
+        Console.WriteLine(e);
+        //EventHandler?.Invoke(this, e);
     }
 
     /// <summary>
@@ -66,6 +67,13 @@ public class ProductionHandler : IProductionDataSource
     {
         Console.WriteLine($"Starting production! order: {_currentOrder.Id}");
         _state = ProductionState.executing;
+        await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
+        await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
+        await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
+        await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
+
+
+
         //await HandleProduction();
         //OnProductionComplete(new ProductionEvent());
     }
@@ -75,12 +83,12 @@ public class ProductionHandler : IProductionDataSource
         await GetController("warehouse").SendCommand(new AssetCommand("pickitem", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
 
-        await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", new Item[0]));
+        await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PutAssemblyOperation", null));
         await GetController("assembly").SendCommand(new AssetCommand("start", null));
         await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
-        await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", new Item[0]));
+        await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
         await GetController("warehouse").SendCommand(new AssetCommand("InsertItem", new Item[0]));

@@ -23,10 +23,20 @@
 
             var app = builder.Build();
             app.MapControllers();
-
+        /*
+            var prodhandler = serviceLocator.LocateAll<IAssetController>();
             var controllers = serviceLocator.LocateAll<IAssetController>();
-            Console.WriteLine($"Loaded {controllers.Count} asset controllers.");
+            Dictionary<string, IAssetController> controlReg = new Dictionary<string, IAssetController>();
+
+            foreach (var item in controllers)
+            {
+                controlReg.Add(item.GetAssetName, item);
+            }
+        */
+            //Console.WriteLine($"Loaded {controllers.Count} asset controllers.");
             Console.WriteLine($"Loaded {serviceLocator.GetPluginAssemblies().Count} plugin assemblies.");
+
+            //controlReg["agv"].SendCommand(new AssetCommand("test",null));
 
             app.Run();
         }
