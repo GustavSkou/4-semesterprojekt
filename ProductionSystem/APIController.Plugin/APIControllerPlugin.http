@@ -1,10 +1,10 @@
-@APIControllerPlugin_HostAddress = http://localhost:5027
+@APIController.Plugin_HostAddress = http://localhost:5027
 
 
 
 ###
 
-POST {{APIControllerPlugin_HostAddress}}/ProductionSystem/Command
+POST {{APIController.Plugin_HostAddress}}/ProductionSystem/Command
 Content-Type: application/json
 
 {
