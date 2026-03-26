@@ -1,10 +1,12 @@
-﻿using Common.Util;
+﻿namespace ProductionHandlerPlugin;
+
+
+using Common.Util;
 using Common.Data;
 
 using CommonAssetController;
 using Common.ProductionDataSource;
 
-namespace ProductionHandlerPlugin;
 
 public class ProductionHandler : IProductionDataSource
 {
@@ -22,7 +24,7 @@ public class ProductionHandler : IProductionDataSource
         foreach (IAssetController controller in GetAssetControllers())
         {
             controller.ProductionEventHandler += OnProductionEvent;
-            //controller.Connect();
+            controller.Connect().GetAwaiter().GetResult();
             _controllerRegistry.Add(controller.GetAssetName, controller);
         }
     }
@@ -47,7 +49,7 @@ public class ProductionHandler : IProductionDataSource
         if (OrderHandler.Instance.OrderQueue.Count > 0)
         {
             _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
-            StartProduction();
+            _ = StartProduction();
         }
     }
 
@@ -59,33 +61,49 @@ public class ProductionHandler : IProductionDataSource
         if (OrderHandler.Instance.OrderQueue.Count > 0)
         {
             _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
-            StartProduction();
+            _ = StartProduction();
         }
     }
     private async Task StartProduction()
     {
+        if (_currentOrder == null)
+            return;
+
         Console.WriteLine($"Starting production! order: {_currentOrder.Id}");
         _state = ProductionState.executing;
+
         await HandleProduction();
-        OnProductionComplete(new ProductionEvent());
+
+        OnProductionComplete(new ProductionEvent
+        {
+            DateAndTime = DateTime.Now,
+            Description = $"Order {_currentOrder.Id} completed",
+            Source = "production-handler",
+            Type = "completed",
+            Level = "low"
+        });
     }
 
-    private async Task<Task> HandleProduction()
+
+    private async Task HandleProduction()
     {
+        if (_currentOrder == null)
+            return;
+
         await GetController("warehouse").SendCommand(new AssetCommand("PickItem", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
 
         await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PutAssemblyOperation", null));
+
         await GetController("assembly").SendCommand(new AssetCommand("start", null));
+
         await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
-        await GetController("warehouse").SendCommand(new AssetCommand("InsertItem", new Item[0]));
-
-        return Task.CompletedTask;
+        await GetController("warehouse").SendCommand(new AssetCommand("InsertItem", Array.Empty<Item>()));
     }
 
     /// <summary>
