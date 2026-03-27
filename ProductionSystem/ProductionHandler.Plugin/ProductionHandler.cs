@@ -92,7 +92,6 @@ public class ProductionHandler : IProductionDataSource
 
         await GetController("warehouse").SendCommand(new AssetCommand("PickItem", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
-
         await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PutAssemblyOperation", null));
