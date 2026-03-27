@@ -1,4 +1,5 @@
 namespace AGVController;
+
 using System.Text.Json;
 using System.Text;
 using System;
@@ -17,7 +18,7 @@ public partial class AGVController
         if (status.state != 1)
             return false;
 
-        
+
         await LoadProgramAsync(programName);
         ExecuteCommandEvent(programName);
         return true;
@@ -28,10 +29,13 @@ public partial class AGVController
         StatusDTO? status;
         while (true)
         {
-            try {
+            try
+            {
                 status = await ReadStatus();
                 Console.WriteLine(status.state);
-            } catch {
+            }
+            catch
+            {
                 return false;
             }
 
@@ -49,11 +53,11 @@ public partial class AGVController
                     Level = "low"
                 });
                 return true;
-            } 
-            
+            }
+
             if (status.state == 3)
                 return false;
-            
+
             await Task.Delay(250);
         }
     }
@@ -72,6 +76,20 @@ public partial class AGVController
         {
             ["Program name"] = programName,
             ["State"] = "1"
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        using var response = await httpClient.PutAsync($"{baseUrl}/status", content);
+        response.EnsureSuccessStatusCode();
+        await LoadExecutingStateAsync();
+    }
+    private async Task LoadExecutingStateAsync()
+    {
+        var payload = new Dictionary<string, string>
+        {
+            ["State"] = "2"
         };
 
         var json = JsonSerializer.Serialize(payload);

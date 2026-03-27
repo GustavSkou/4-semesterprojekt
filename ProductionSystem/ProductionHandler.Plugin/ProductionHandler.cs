@@ -139,4 +139,10 @@ public class ProductionHandler : IProductionDataSource
             return controller;
         }
     }
+
+    public async Task RefillWarehouse()
+    {
+        await GetController("warehouse").SendCommand(new AssetCommand("refill", null));
+    }
+
 }
