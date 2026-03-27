@@ -8,7 +8,7 @@ public class AssetCommand
     public string Name { get { return name; } }
     public Item[]? Items { get { return items; } }
 
-    public AssetCommand(string commandName, Item[] items)
+    public AssetCommand(string commandName, Item[]? items)
     {
         this.name = commandName;
         this.items = items;

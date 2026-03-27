@@ -16,6 +16,9 @@ public class AssemblyLineController : IAssetController
     private readonly IMqttClient mqttClient;
     private readonly MqttClientOptions mqttClientOptions;
     private readonly MqttClientFactory mqttFactory;
+
+    private TaskCompletionSource<bool>? _assemblyConfirmation;
+
     static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true
@@ -37,14 +40,13 @@ public class AssemblyLineController : IAssetController
         };
     }
 
-    public async Task<bool> Connect()
+     public async Task<bool> Connect()
     {
-        var mqttFactory = new MqttClientFactory();
         try
         {
-            var response = await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-            Console.WriteLine("The MQTT client is connected.");
-            SubribeToTopics();
+            await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
+            Console.WriteLine("Assembly MQTT client connected.");
+            await SubscribeToTopics();
             return true;
         }
         catch (Exception ex)
@@ -58,8 +60,8 @@ public class AssemblyLineController : IAssetController
     {
         try
         {
-            await mqttClient.DisconnectAsync(new MqttClientDisconnectOptionsBuilder().WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection).Build());
-            Console.WriteLine("The MQTT client is disconnected.");
+            await mqttClient.DisconnectAsync();
+            Console.WriteLine("Assembly MQTT client disconnected.");
             return true;
         }
         catch (Exception ex)
@@ -74,7 +76,7 @@ public class AssemblyLineController : IAssetController
         throw new NotImplementedException();
     }
 
-    private async void SubribeToTopics()
+    private async Task SubscribeToTopics()
     {
         var topicFilter = mqttFactory.CreateTopicFilterBuilder().WithTopic("emulator/status").WithAtLeastOnceQoS();
 
@@ -90,25 +92,69 @@ public class AssemblyLineController : IAssetController
     /*
         Handle update on subribe topics 
      */
-    private static Task HandleReceivedMessage(MqttApplicationMessageReceivedEventArgs e)
+    private Task HandleReceivedMessage(MqttApplicationMessageReceivedEventArgs e)
     {
-        var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+        var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);       
+        Console.WriteLine($"Received MQTT message on topic '{e.ApplicationMessage.Topic}': {payloadString}");
 
-        Console.WriteLine("Received application message.");
-        Console.WriteLine(JsonSerializer.Deserialize<JsonElement>(payloadString));
+        if (e.ApplicationMessage.Topic == "emulator/status")
+        {
+            ProductionEventHandler?.Invoke(this, new ProductionEvent
+            {
+                DateAndTime = DateTime.Now,
+                Source = GetAssetName,
+                Type = "confirmation",
+                Level = "low",
+                Description = $"Assembly confirmation received: {payloadString}"
+            });
+
+            _assemblyConfirmation?.TrySetResult(true);
+        }
+
         return Task.CompletedTask;
     }
 
     public async Task<bool> SendCommand(AssetCommand command)
     {
-        Dictionary<string, string> payloadDictionary = new() { { "ProcessID", "123" } };
+        if (command.Name != "start")
+            return false;
+
+        if (!mqttClient.IsConnected)
+        {
+            var connected = await Connect();
+            if (!connected)
+                return false;
+        }
+
+        _assemblyConfirmation = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Dictionary<string, string> payloadDictionary = new()
+        {
+            { "ProcessID", "123" }
+        };
 
         string payload = JsonSerializer.Serialize(payloadDictionary);
 
         var applicationMessage = new MqttApplicationMessageBuilder()
             .WithTopic("emulator/operation")
             .WithPayload(payload)
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
             .Build();
-        return true;
+
+        await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+        Console.WriteLine($"Sent MQTT message to emulator/operation: {payload}");
+
+        var completedTask = await Task.WhenAny(
+            _assemblyConfirmation.Task,
+            Task.Delay(TimeSpan.FromSeconds(30)));
+
+        if (completedTask == _assemblyConfirmation.Task)
+        {
+            return true;
+        }
+
+        Console.WriteLine("Timed out waiting for assembly confirmation.");
+        return false;
     }
 }
