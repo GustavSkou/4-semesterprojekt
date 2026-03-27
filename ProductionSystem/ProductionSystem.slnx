@@ -1,7 +1,7 @@
 <Solution>
-  <Project Path="AgvPlugin/AgvPlugin.csproj" />
-  <Project Path="APIControllerPlugin/RestAPIPlugin.csproj" />
-  <Project Path="AssemblyPlugin/AssemblyPlugin.csproj" />
+  <Project Path="Agv.Plugin/Agv.Plugin.csproj" />
+  <Project Path="APIController.Plugin/RestAPI.Plugin.csproj" />
+  <Project Path="Assembly.Plugin/Assembly.Plugin.csproj" />
   <Project Path="Common.AssetController/Common.AssetController.csproj" />
   <Project Path="Common.MonitorDataSource/Common.MonitorDataSource.csproj" />
   <Project Path="Common.Presistence/Common.Presistence.csproj" Id="7c5f04b3-56c0-48f8-957b-fb62c01227f9" />
@@ -9,11 +9,11 @@
   <Project Path="Common.ProductionHandler/Common.ProductionHandler.csproj" />
   <Project Path="Common.PubSubDataSource/Common.PubSubDataSource.csproj" />
   <Project Path="Common/Common.csproj" />
-  <Project Path="PersistencePlugin/PersistencePlugin.csproj" />
+  <Project Path="Persistence.Plugin/Persistence.Plugin.csproj" />
   <Project Path="PluginHost/PluginHost.csproj" />
-  <Project Path="ProductionDataHandlerPlugin/DataHandlerPlugin.csproj" />
-  <Project Path="ProductionHandlerPlugin/ProductionHandlerPlugin.csproj" />
-  <Project Path="ProductionMonitoringPlugin/MonitoringPlugin.csproj" />
-  <Project Path="PubSubControllerPlugin/PubSubControllerPlugin.csproj" />
-  <Project Path="WarehousePlugin/WarehousePlugin.csproj" />
+  <Project Path="ProductionDataHandler.Plugin/DataHandler.Plugin.csproj" />
+  <Project Path="ProductionHandler.Plugin/ProductionHandler.Plugin.csproj" />
+  <Project Path="ProductionMonitoring.Plugin/Monitoring.Plugin.csproj" />
+  <Project Path="PubSubController.Plugin/PubSubController.Plugin.csproj" />
+  <Project Path="Warehouse.Plugin/Warehouse.Plugin.csproj" />
 </Solution>

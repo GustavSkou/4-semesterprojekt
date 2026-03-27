@@ -4,13 +4,13 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProductionSystem", "ProductionSystem", "{B57F64CD-88CA-70DF-EF46-63BC75FBA174}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgvPlugin", "ProductionSystem\AgvPlugin\AgvPlugin.csproj", "{8B45E256-ABB1-5D78-9873-C9B7881DE17F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agv.Plugin", "ProductionSystem\Agv.Plugin\Agv.Plugin.csproj", "{8B45E256-ABB1-5D78-9873-C9B7881DE17F}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "APIControllerPlugin", "APIControllerPlugin", "{70C40A86-2AC6-02C1-547F-FF4DE5EDB0C6}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "APIController.Plugin", "APIController.Plugin", "{70C40A86-2AC6-02C1-547F-FF4DE5EDB0C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestAPIPlugin", "ProductionSystem\APIControllerPlugin\RestAPIPlugin.csproj", "{C5CF7DED-4A41-A1DD-3FB4-7964B2F09B8F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestAPIPlugin", "ProductionSystem\APIController.Plugin\RestAPI.Plugin.csproj", "{C5CF7DED-4A41-A1DD-3FB4-7964B2F09B8F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssemblyPlugin", "ProductionSystem\AssemblyPlugin\AssemblyPlugin.csproj", "{DCBF3FC7-C73C-09CD-F97F-666E51AD14B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly.Plugin", "ProductionSystem\Assembly.Plugin\Assembly.Plugin.csproj", "{DCBF3FC7-C73C-09CD-F97F-666E51AD14B3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "ProductionSystem\Common\Common.csproj", "{C443D4C3-A223-06B9-150F-0007FC761A1C}"
 EndProject
@@ -28,19 +28,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.PubSubDataSource", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginHost", "ProductionSystem\PluginHost\PluginHost.csproj", "{464837AC-3B97-AD70-51BC-8ACDB5F91261}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProductionDataHandlerPlugin", "ProductionDataHandlerPlugin", "{581B0493-AB8B-0E9E-772D-CDBCCF775F74}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProductionDataHandler.Plugin", "ProductionDataHandler.Plugin", "{581B0493-AB8B-0E9E-772D-CDBCCF775F74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataHandlerPlugin", "ProductionSystem\ProductionDataHandlerPlugin\DataHandlerPlugin.csproj", "{9DCA49F8-77D7-A4FF-C3E7-204A5DE022F9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataHandlerPlugin", "ProductionSystem\ProductionDataHandler.Plugin\DataHandler.Plugin.csproj", "{9DCA49F8-77D7-A4FF-C3E7-204A5DE022F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductionHandlerPlugin", "ProductionSystem\ProductionHandlerPlugin\ProductionHandlerPlugin.csproj", "{209241F6-205A-81B6-8698-B38FBD18AD00}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductionHandler.Plugin", "ProductionSystem\ProductionHandler.Plugin\ProductionHandler.Plugin.csproj", "{209241F6-205A-81B6-8698-B38FBD18AD00}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProductionMonitoringPlugin", "ProductionMonitoringPlugin", "{21611EB8-0566-7DAA-3A8B-5683FD44ABC9}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProductionMonitoring.Plugin", "ProductionMonitoring.Plugin", "{21611EB8-0566-7DAA-3A8B-5683FD44ABC9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitoringPlugin", "ProductionSystem\ProductionMonitoringPlugin\MonitoringPlugin.csproj", "{828DC7FE-59F1-CAAF-FCC1-3491FBFDEDF2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitoringPlugin", "ProductionSystem\ProductionMonitoring.Plugin\Monitoring.Plugin.csproj", "{828DC7FE-59F1-CAAF-FCC1-3491FBFDEDF2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PubSubControllerPlugin", "ProductionSystem\PubSubControllerPlugin\PubSubControllerPlugin.csproj", "{94894716-6191-A097-972E-26E476CB215B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PubSubController.Plugin", "ProductionSystem\PubSubController.Plugin\PubSubController.Plugin.csproj", "{94894716-6191-A097-972E-26E476CB215B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarehousePlugin", "ProductionSystem\WarehousePlugin\WarehousePlugin.csproj", "{4F29B91A-14EA-F122-4482-18D6C2EE1B6B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Warehouse.Plugin", "ProductionSystem\Warehouse.Plugin\Warehouse.Plugin.csproj", "{4F29B91A-14EA-F122-4482-18D6C2EE1B6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

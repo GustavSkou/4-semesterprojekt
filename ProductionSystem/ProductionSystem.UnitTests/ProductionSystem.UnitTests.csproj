@@ -13,6 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProductionHandlerPlugin\ProductionHandlerPlugin.csproj" />
+    <ProjectReference Include="..\ProductionHandler.Plugin\ProductionHandler.Plugin.csproj" />
   </ItemGroup>
 </Project>

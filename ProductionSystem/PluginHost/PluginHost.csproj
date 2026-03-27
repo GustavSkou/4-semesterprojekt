@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -27,14 +27,14 @@
     <ProjectReference Include="..\Common.ProductionHandler\Common.ProductionHandler.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
 
-    <PluginProject Include="..\AgvPlugin\AgvPlugin.csproj" />
-    <PluginProject Include="..\AssemblyPlugin\AssemblyPlugin.csproj" />
-    <PluginProject Include="..\WarehousePlugin\WarehousePlugin.csproj" />
-    <PluginProject Include="..\PubSubControllerPlugin\PubSubControllerPlugin.csproj" />
-    <PluginProject Include="..\ProductionMonitoringPlugin\MonitoringPlugin.csproj" />
-    <PluginProject Include="..\ProductionHandlerPlugin\ProductionHandlerPlugin.csproj" />
-    <PluginProject Include="..\ProductionDataHandlerPlugin\DataHandlerPlugin.csproj" />
-    <PluginProject Include="..\APIControllerPlugin\RestAPIPlugin.csproj" />
+    <PluginProject Include="..\Agv.Plugin\Agv.Plugin.csproj" />
+    <PluginProject Include="..\Assembly.Plugin\Assembly.Plugin.csproj" />
+    <PluginProject Include="..\Warehouse.Plugin\Warehouse.Plugin.csproj" />
+    <PluginProject Include="..\PubSubController.Plugin\PubSubController.Plugin.csproj" />
+    <PluginProject Include="..\ProductionMonitoring.Plugin\Monitoring.Plugin.csproj" />
+    <PluginProject Include="..\ProductionHandler.Plugin\ProductionHandler.Plugin.csproj" />
+    <PluginProject Include="..\ProductionDataHandler.Plugin\DataHandler.Plugin.csproj" />
+    <PluginProject Include="..\APIController.Plugin\RestAPI.Plugin.csproj" />
   </ItemGroup>
 
   <Target Name="BuildAndCopyPlugins" AfterTargets="Build">
