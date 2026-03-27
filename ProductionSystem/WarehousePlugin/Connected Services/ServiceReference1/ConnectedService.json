@@ -1,0 +1,20 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "http://localhost:8081/Service.asmx"
+    ],
+    "collectionTypes": [
+      "System.Array",
+      "System.Collections.Generic.Dictionary`2"
+    ],
+    "namespaceMappings": [
+      "*, ServiceReference1"
+    ],
+    "references": [
+      "C:\\Users\\Victo\\schoolprojects\\4-semesterprojekt\\ProductionSystem\\WarehousePlugin\\bin\\Debug\\net10.0\\Plugins\\Common.AssetController.dll",
+      "C:\\Users\\Victo\\schoolprojects\\4-semesterprojekt\\ProductionSystem\\WarehousePlugin\\bin\\Debug\\net10.0\\Plugins\\Common.dll"
+    ],
+    "targetFramework": "net10.0",
+    "typeReuseMode": "All"
+  }
+}

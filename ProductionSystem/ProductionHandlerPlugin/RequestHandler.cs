@@ -10,17 +10,23 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
         GetProductionHandler();
     }
 
-    public Task SendCommand(ProductionCommand command)
+    public async Task SendCommand(ProductionCommand command)
     {
         switch (command.Name)
         {
             case "order":
                 Console.WriteLine("order command");
                 OrderHandler.Instance.AddOrderCommandToQueue(command);
-                return Task.CompletedTask;
+                return;
             
+            case "refill":
+                Console.WriteLine("refill command");
+                await GetProductionHandler().RefillWarehouse();
+                return;
+
+
             default:
-                return Task.CompletedTask;
+                return;
         }
     }
 
