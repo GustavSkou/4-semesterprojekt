@@ -29,7 +29,11 @@
 
     <PluginProject Include="..\Agv.Plugin\Agv.Plugin.csproj" />
     <PluginProject Include="..\Assembly.Plugin\Assembly.Plugin.csproj" />
-    <PluginProject Include="..\Warehouse.Plugin\Warehouse.Plugin.csproj" />
+    <PluginProject Include="..\Warehouse1.Plugin\Warehouse1.Plugin.csproj" />
+    <PluginProject Include="..\Warehouse2.Plugin\Warehouse2.Plugin.csproj" />
+    <PluginProject Include="..\Warehouse3.Plugin\Warehouse3.Plugin.csproj" />
+    <PluginProject Include="..\Warehouse4.Plugin\Warehouse4.Plugin.csproj" />
+    <PluginProject Include="..\Warehouse5.Plugin\Warehouse5.Plugin.csproj" />
     <PluginProject Include="..\PubSubController.Plugin\PubSubController.Plugin.csproj" />
     <PluginProject Include="..\ProductionMonitoring.Plugin\Monitoring.Plugin.csproj" />
     <PluginProject Include="..\ProductionHandler.Plugin\ProductionHandler.Plugin.csproj" />

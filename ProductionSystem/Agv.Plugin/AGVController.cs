@@ -8,7 +8,7 @@ using System.Net.Http;
 public partial class AGVController : IAssetController
 {
     private readonly HttpClient httpClient;
-    private readonly string baseUrl = "http://localhost:8082/v1";
+    private readonly string baseUrl = "http://localhost:8086/v1";
 
     private List<Item> _heldItems;
 

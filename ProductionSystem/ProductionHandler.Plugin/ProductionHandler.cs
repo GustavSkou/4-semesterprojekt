@@ -3,6 +3,7 @@ using Common.Data;
 
 using CommonAssetController;
 using Common.ProductionDataSource;
+using Common.Presistence;
 
 namespace ProductionHandlerPlugin;
 
@@ -22,9 +23,11 @@ public class ProductionHandler : IProductionDataSource
         foreach (IAssetController controller in GetAssetControllers())
         {
             controller.ProductionEventHandler += OnProductionEvent;
-            //controller.Connect();
+            controller.Connect();
             _controllerRegistry.Add(controller.GetAssetName, controller);
         }
+
+        _ = PopulateWarehouses();
     }
 
     private void OnProductionEvent(object? sender, ProductionEvent e)
@@ -72,7 +75,8 @@ public class ProductionHandler : IProductionDataSource
 
     private async Task<Task> HandleProduction()
     {
-        await GetController("warehouse").SendCommand(new AssetCommand("PickItem", _currentOrder.Items));
+        foreach (var group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
+            await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
@@ -82,8 +86,7 @@ public class ProductionHandler : IProductionDataSource
         await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", _currentOrder.Items));
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
-        await GetController("warehouse").SendCommand(new AssetCommand("InsertItem", new Item[0]));
-
+        await InsertFinishedProduct();
         return Task.CompletedTask;
     }
 
@@ -121,9 +124,38 @@ public class ProductionHandler : IProductionDataSource
         }
     }
 
+    private IWarehouseController GetWarehouseForTray(int trayId)
+    {
+        return GetAssetControllers()
+            .OfType<IWarehouseController>()
+            .First(w => trayId >= w.MinTray && trayId <= w.MaxTray);
+    }
+
+    private async Task InsertFinishedProduct()
+    {
+        var warehouse5 = GetWarehouseForTray(41);
+        bool hasSpace = await warehouse5.SendCommand(new AssetCommand("CheckSpace", null));
+        if (!hasSpace)
+        {
+            Console.WriteLine("Warehouse 5 is full... Production paused. Resume when items are shipped.");
+            _state = ProductionState.paused;
+            return;
+        }
+        await warehouse5.SendCommand(new AssetCommand("InsertItem", null));
+    }
+
     public async Task RefillWarehouse()
     {
-        await GetController("warehouse").SendCommand(new AssetCommand("refill", null));
+        foreach (var w in GetAssetControllers().OfType<IWarehouseController>().Where(w => w.MaxTray <= 40))
+            await w.SendCommand(new AssetCommand("Refill", null));    
     }
+
+    public async Task PopulateWarehouses()
+{
+    var components = ServiceLocator.Instance.LocateAll<IPersistence>()[0].GetComponents();
+    
+    foreach (var group in components.GroupBy(c => GetWarehouseForTray(c.TrayId)))
+        await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
+}
 
 }

@@ -22,18 +22,40 @@ services:
   st4-agv:
     image: thmork/st4-agv:latest
     ports:
-      - 8082:80
+      - 8086:80
  
-  st4-warehouse:
+  st4-warehouse1:
     image: thmork/st4-warehouse:latest
     ports:
       - 8081:80
+
+  st4-warehouse2:
+    image: thmork/st4-warehouse:latest
+    ports:
+      - 8082:80
+
+  st4-warehouse3:
+    image: thmork/st4-warehouse:latest
+    ports:
+      - 8083:80
+
+
+  st4-warehouse4:
+    image: thmork/st4-warehouse:latest
+    ports:
+      - 8084:80
+
+
+  st4-warehouse5:
+    image: thmork/st4-warehouse:latest
+    ports:
+      - 8085:80
 
   st4-assemblystation:
     image: thmork/st4-assemblystation:latest
     environment:
       MQTT_TCP_CONNECTION_HOST: "mqtt"
-      MQTT_TCP_CONNECTION_PORT: 1883
+      MQTT_TCP_CONNECTION_PORT: 1887
 
 volumes:
   postgres_data:

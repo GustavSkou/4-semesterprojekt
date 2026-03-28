@@ -15,12 +15,12 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
         switch (command.Name)
         {
             case "order":
-                Console.WriteLine("order command");
+                Console.WriteLine("Order command");
                 OrderHandler.Instance.AddOrderCommandToQueue(command);
                 return;
             
-            case "refill":
-                Console.WriteLine("refill command");
+            case "Refill":
+                Console.WriteLine("Refill command");
                 await GetProductionHandler().RefillWarehouse();
                 return;
 
