@@ -41,13 +41,17 @@
     <PluginProject Include="..\APIController.Plugin\RestAPI.Plugin.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+  </ItemGroup>
+
   <Target Name="BuildAndCopyPlugins" AfterTargets="Build">
-    <MSBuild Projects="@(PluginProject)" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);OutputPath=bin\$(Configuration)\$(TargetFramework)\Plugins\;CopyLocalLockFileAssemblies=true" />
+    <MSBuild Projects="@(PluginProject)" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);OutputPath=bin\$(Configuration)\$(TargetFramework)\;CopyLocalLockFileAssemblies=true" />
     <RemoveDir Directories="$(RepoPluginsDir)" />
     <MakeDir Directories="$(RepoPluginsDir)" />
     <ItemGroup>
-      <PluginOutputFiles Include="..\*Plugin\bin\$(Configuration)\$(TargetFramework)\Plugins\*.dll" />
-      <PluginOutputFiles Include="..\*Plugin\bin\$(Configuration)\$(TargetFramework)\Plugins\*.deps.json" />
+      <PluginOutputFiles Include="..\*Plugin\bin\$(Configuration)\$(TargetFramework)\*.dll" />
+      <PluginOutputFiles Include="..\*Plugin\bin\$(Configuration)\$(TargetFramework)\*.deps.json" />
     </ItemGroup>
     <Copy SourceFiles="@(PluginOutputFiles)" DestinationFolder="$(RepoPluginsDir)" SkipUnchangedFiles="true" />
   </Target>

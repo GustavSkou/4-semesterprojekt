@@ -8,6 +8,7 @@
   <Project Path="Common.ProductionDataSource/Common.DataSource.csproj" />
   <Project Path="Common.ProductionHandler/Common.ProductionHandler.csproj" />
   <Project Path="Common.PubSubDataSource/Common.PubSubDataSource.csproj" />
+  <Project Path="Common.Warehouse/Common.Warehouse.csproj" />
   <Project Path="Common/Common.csproj" />
   <Project Path="Persistence.Plugin/Persistence.Plugin.csproj" />
   <Project Path="PluginHost/PluginHost.csproj" />
@@ -15,5 +16,9 @@
   <Project Path="ProductionHandler.Plugin/ProductionHandler.Plugin.csproj" />
   <Project Path="ProductionMonitoring.Plugin/Monitoring.Plugin.csproj" />
   <Project Path="PubSubController.Plugin/PubSubController.Plugin.csproj" />
-  <Project Path="Warehouse.Plugin/Warehouse.Plugin.csproj" />
+  <Project Path="Warehouse1.Plugin/Warehouse1.Plugin.csproj" />
+  <Project Path="Warehouse2.Plugin/Warehouse2.Plugin.csproj" />
+  <Project Path="Warehouse3.Plugin/Warehouse3.Plugin.csproj" />
+  <Project Path="Warehouse4.Plugin/Warehouse4.Plugin.csproj" />
+  <Project Path="Warehouse5.Plugin/Warehouse5.Plugin.csproj" />
 </Solution>

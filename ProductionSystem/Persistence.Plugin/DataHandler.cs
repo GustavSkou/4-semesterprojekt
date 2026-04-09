@@ -15,10 +15,12 @@ public class DataHandler : IPersistence
 
     public Item[] GetComponents()
     {
+        throw new NotImplementedException();
+        /*
         using var db = new ProductionDbContext();
         return db.Components
             .OrderBy(c => c.Id)
             .Select((c, i) => new Item { TrayId = i + 1, Name = c.Name })
             .ToArray();
-    }
+    */}
 }

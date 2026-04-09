@@ -88,10 +88,10 @@ public class ProductionHandler : IProductionDataSource
     }
 
 
-    private async Task HandleProduction()
+    private async Task<Task> HandleProduction()
     {
         if (_currentOrder == null)
-            return;
+            return Task.CompletedTask;
 
         foreach (var group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
             await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));

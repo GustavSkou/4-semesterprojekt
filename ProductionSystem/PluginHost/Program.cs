@@ -20,7 +20,7 @@
             {
                 mvcBuilder.PartManager.ApplicationParts.Add(new AssemblyPart(asm));
             }
-
+            Console.WriteLine($"Loaded {serviceLocator.GetPluginAssemblies().Count} plugin assemblies.");
             var app = builder.Build();
             
             app.MapControllers();
@@ -35,7 +35,7 @@
                     }
                 */
             //Console.WriteLine($"Loaded {controllers.Count} asset controllers.");
-            Console.WriteLine($"Loaded {serviceLocator.GetPluginAssemblies().Count} plugin assemblies.");
+            
 
             //controlReg["agv"].SendCommand(new AssetCommand("test",null));
 
