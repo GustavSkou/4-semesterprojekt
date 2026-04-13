@@ -6,15 +6,15 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "MonitoringPlugin/1.0.0": {
+      "PubSubControllerPlugin/1.0.0": {
         "runtime": {
-          "MonitoringPlugin.dll": {}
+          "PubSubControllerPlugin.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "MonitoringPlugin/1.0.0": {
+    "PubSubControllerPlugin/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

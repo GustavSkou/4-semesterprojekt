@@ -2,6 +2,7 @@ using Common.Data;
 using Common.Presistence;
 using Microsoft.EntityFrameworkCore;
 using PersistencePlugin.Models;
+using System.Linq;
 
 namespace PersistencePlugin;
 
@@ -79,12 +80,23 @@ type=;
 
     public Item[] GetComponents()
     {
-        throw new NotImplementedException();
-        /*
-        using var db = new ProductionDbContext();
-        return db.Components
-            .OrderBy(c => c.Id)
-            .Select((c, i) => new Item { TrayId = i + 1, Name = c.Name })
-            .ToArray();
-    */}
+        try
+        {
+            using var db = new ProductionDbContext(_dbOptions);
+
+            return db.components
+                .OrderBy(c => c.id)
+                .Select((c, i) => new Item
+                {
+                    TrayId = c.tray_id ?? (i + 1),
+                    Name = c.name
+                })
+                .ToArray();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Persistence fallback in GetComponents: {ex.Message}");
+            return Array.Empty<Item>();
+        }
+    }
 }

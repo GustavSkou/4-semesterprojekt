@@ -7,7 +7,7 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
 {
     public RequestHandler()
     {
-        GetProductionHandler();
+        // Keep construction lightweight so command routing works even when external assets are offline.
     }
 
     public async Task SendCommand(ProductionCommand command)
