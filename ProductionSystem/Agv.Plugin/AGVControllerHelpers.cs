@@ -32,7 +32,7 @@ public partial class AGVController
             try
             {
                 status = await ReadStatus();
-                Console.WriteLine(status.state);
+                // Console.WriteLine(status.state);
             }
             catch
             {

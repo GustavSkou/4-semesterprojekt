@@ -6,14 +6,24 @@ using Common.ProductionDataSource;
 using Common.Presistence;
 public class ProductionDataHandler
 {
+    IPersistence persistenceService;
+
     public ProductionDataHandler()
     {
-        GetProductionDataSources().First().EventHandler += OnProductionEvent;
+        persistenceService = GetPersistenceServices()[0];
+
+        // if there exists multipule prod data sources, they all invoke the onprodevent method
+        foreach (var dataSource in GetProductionDataSources())
+        {
+            Console.WriteLine("setup datasource");
+            dataSource.EventHandler += OnProductionEvent;
+        }
     }
 
     private void OnProductionEvent(object? obj, ProductionEvent e)
     {
-
+        Console.WriteLine("ProductionDataHandler : ProductionEvent");
+        persistenceService.SaveProductionEvent(e);
     }
 
     private IReadOnlyList<IProductionDataSource> GetProductionDataSources()

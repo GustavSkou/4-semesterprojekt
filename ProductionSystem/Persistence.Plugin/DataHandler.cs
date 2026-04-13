@@ -2,6 +2,7 @@ using Common.Data;
 using Common.Presistence;
 using Microsoft.EntityFrameworkCore;
 using PersistencePlugin.Models;
+using System.Collections.Concurrent;
 using System.Linq;
 
 namespace PersistencePlugin;
@@ -9,9 +10,14 @@ namespace PersistencePlugin;
 public class DataHandler : IPersistence
 {
     private readonly DbContextOptions<ProductionDbContext> _dbOptions;
+    private ConcurrentQueue<ProductionEvent> productionEvents;
+    private bool processingTaskRunning;
 
     public DataHandler()
     {
+
+        productionEvents = new ConcurrentQueue<ProductionEvent>();
+
         var connectionString = "Host=localhost;Port=5433;Database=configurepc;Username=configurepc;Password=configurepc";
 
         _dbOptions = new DbContextOptionsBuilder<ProductionDbContext>()
@@ -21,62 +27,81 @@ public class DataHandler : IPersistence
 
     public void SaveProductionEvent(ProductionEvent productionEvent)
     {
-        /*
-        using var dbContext = new ProductionDbContext(_dbOptions);
+        Console.WriteLine("Save Prod Event");
         
-        source source = new source();
-        level level = new level();
-        type type = new type();
-
-        if (!string.IsNullOrEmpty(productionEvent.Source))
-        {
-            source.
-            {
-                name = productionEvent.Source
-            };
-        }
-
-        if (!string.IsNullOrEmpty(productionEvent.Level))
-        {
-            level 
-            {
-                name = productionEvent.Level
-            };
-        }
-
-        if (!string.IsNullOrEmpty(productionEvent.Type))
-        {
-            type type = new type
-            {
-                name = productionEvent.Type
-            };
-        }
+        productionEvents.Enqueue(productionEvent);
         
-
-
-        log log = new log
-        {
-            timestamp   = productionEvent.DateAndTime,
-            description = productionEvent.Description,
-            level_id    = 
-            source_id   =
-            type_id     =
-            level =
-            source =
-
-type=;
-        };
-
-        dbContext.logs.save
-        
-
-        /*productionEvent.Type;
-        productionEvent.Level;
-        productionEvent.Source;*/
-
-
-
+        if (!processingTaskRunning) 
+        {            
+            _ = ProcessProductionEvents();
+        }     
     }
+
+    private async Task ProcessProductionEvents() {
+        try {
+            processingTaskRunning = true;
+            using var dbContext = new ProductionDbContext(_dbOptions);
+
+            while(productionEvents.TryDequeue(out ProductionEvent productionEvent)) 
+            {
+                if (string.IsNullOrEmpty(productionEvent.Source))
+                    continue;
+
+                if (string.IsNullOrEmpty(productionEvent.Level))
+                    continue;
+
+                if (string.IsNullOrEmpty(productionEvent.Type))
+                    continue;
+
+                string sourceName = productionEvent.Source.Trim().ToLower();
+                string levelName = productionEvent.Level.Trim().ToLower();
+                string typeName = productionEvent.Type.Trim().ToLower();
+
+                source source = await dbContext.sources.FirstOrDefaultAsync(s => s.name == sourceName) ?? 
+                    new source { 
+                        name = sourceName, 
+                    };
+
+                level level = await dbContext.levels.FirstOrDefaultAsync(l => l.name == levelName) ?? 
+                    new level { 
+                        name = levelName, 
+                    };
+
+                type type = await dbContext.types.FirstOrDefaultAsync(t => t.name == typeName) ?? 
+                    new type { 
+                        name = typeName
+                    };
+
+                if (source.id == 0)
+                    dbContext.sources.Add(source);
+
+                if (level.id == 0)
+                    dbContext.levels.Add(level);
+
+                if (type.id == 0)
+                    dbContext.types.Add(type);
+
+                if (source.id == 0 || level.id == 0 || type.id == 0)
+                    await dbContext.SaveChangesAsync();
+
+                DateTime dateTime = productionEvent.DateAndTime != null ? (DateTime)productionEvent.DateAndTime : DateTime.Now;
+
+                log log = new log {
+                    timestamp   = dateTime,
+                    description = productionEvent.Description,
+                    level_id    = level.id,
+                    source_id   = source.id,
+                    type_id     = type.id,
+                };
+
+                dbContext.logs.Add(log);
+                await dbContext.SaveChangesAsync();
+            }
+        } finally {
+            processingTaskRunning = false;
+        }
+    }
+    
 
     public Item[] GetComponents()
     {

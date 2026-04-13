@@ -1,6 +1,5 @@
 ﻿namespace ProductionHandlerPlugin;
 
-
 using Common.Util;
 using Common.Data;
 
@@ -35,7 +34,7 @@ public class ProductionHandler : IProductionDataSource
     private void OnProductionEvent(object? sender, ProductionEvent e)
     {
         Console.WriteLine(e);
-        //EventHandler?.Invoke(this, e);
+        EventHandler?.Invoke(this, e);
     }
 
     /// <summary>
@@ -67,6 +66,7 @@ public class ProductionHandler : IProductionDataSource
             _ = StartProduction();
         }
     }
+
     private async Task StartProduction()
     {
         if (_currentOrder == null)
@@ -86,7 +86,6 @@ public class ProductionHandler : IProductionDataSource
             Level = "low"
         });
     }
-
 
     private async Task<Task> HandleProduction()
     {
