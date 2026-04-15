@@ -1,5 +1,5 @@
 using Common.Data;
-using Common.Presistence;
+using Common.Persistence;
 using Microsoft.EntityFrameworkCore;
 using PersistencePlugin.Models;
 using System.Collections.Concurrent;
@@ -15,7 +15,7 @@ public class DataHandler : IPersistence
 
     public DataHandler()
     {
-
+        Console.WriteLine("[DataHandler instance]");
         productionEvents = new ConcurrentQueue<ProductionEvent>();
 
         var connectionString = "Host=localhost;Port=5433;Database=configurepc;Username=configurepc;Password=configurepc";
@@ -105,6 +105,8 @@ public class DataHandler : IPersistence
 
     public Item[] GetComponents()
     {
+        return Array.Empty<Item>();
+        /*
         try
         {
             using var db = new ProductionDbContext(_dbOptions);
@@ -123,5 +125,6 @@ public class DataHandler : IPersistence
             Console.WriteLine($"Persistence fallback in GetComponents: {ex.Message}");
             return Array.Empty<Item>();
         }
+        */
     }
 }

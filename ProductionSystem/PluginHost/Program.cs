@@ -6,6 +6,8 @@
     using Microsoft.Extensions.DependencyInjection;
     using Common.Util;
     using System;
+    using Common.Persistence;
+    using System.Data.Common;
 
     public class Program
     {
@@ -24,6 +26,10 @@
             var app = builder.Build();
             
             app.MapControllers();
+            
+            var db = serviceLocator.LocateAll<IPersistence>();
+            Console.WriteLine(db.First());
+            
             /*
                 var prodhandler = serviceLocator.LocateAll<IAssetController>();
                 var controllers = serviceLocator.LocateAll<IAssetController>();
