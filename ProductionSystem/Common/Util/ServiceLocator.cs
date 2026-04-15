@@ -9,6 +9,7 @@ public sealed class ServiceLocator
     private readonly List<Assembly> _pluginAssemblies = new();
     private readonly Dictionary<string, Assembly> _pluginRegistry = new();
     private readonly Dictionary<Type, List<object>> _serviceRegistry = new();
+    private readonly Dictionary<Type, object> _serviceInstances = new();
 
     private ServiceLocator()
     {
@@ -51,10 +52,28 @@ public sealed class ServiceLocator
 
                 // Create the instance of the services 
                 // Requires public parameterless constructor
-                if (Activator.CreateInstance(candidateType) is T instance)
+
+                // if the service already has been instanciated before
+                if (_serviceInstances[candidateType] != null)
                 {
-                    services.Add(instance);
+                    
+                } else {
+                    if (Activator.CreateInstance(candidateType) is T instance)
+                    {
+                        
+                        if (_serviceInstances[instance.GetType()] != null)
+                        {
+                            
+                        }
+                        services.Add(instance);
+                        
+
+
+                        _serviceInstances[instance.GetType()] = instance;
+                    }
                 }
+
+                
             }
         }
 
@@ -80,6 +99,16 @@ public sealed class ServiceLocator
             return false;
 
         return true;
+    }
+
+    private bool IsAServiceImplementation(Type service)
+    {
+        if (service is null || service.IsAbstract || service.IsInterface)
+            return false;
+        else
+            return true;
+    
+        //service.IsClass
     }
 
     /// <summary>
