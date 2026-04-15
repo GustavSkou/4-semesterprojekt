@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using PersistencePlugin.Models;
 using System.Collections.Concurrent;
 using System.Linq;
+using Common.Service;
 
 namespace PersistencePlugin;
 
-public class DataHandler : IPersistence
+public class DataHandler : IPersistence, IPlugin
 {
     private readonly DbContextOptions<ProductionDbContext> _dbOptions;
     private ConcurrentQueue<ProductionEvent> productionEvents;
@@ -127,4 +128,8 @@ public class DataHandler : IPersistence
         }
         */
     }
+
+    public void Start() { }
+
+    public void Stop() { }
 }

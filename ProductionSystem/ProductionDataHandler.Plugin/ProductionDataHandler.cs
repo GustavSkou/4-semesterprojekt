@@ -2,9 +2,11 @@
 
 using Common.Util;
 using Common.Data;
+using Common.Service;
 using Common.ProductionDataSource;
 using Common.Persistence;
-public class ProductionDataHandler
+
+public class ProductionDataHandler : IPlugin
 {
     IPersistence persistenceService;
 
@@ -34,5 +36,15 @@ public class ProductionDataHandler
     private IReadOnlyList<IPersistence> GetPersistenceServices()
     {
         return ServiceLocator.Instance.LocateAll<IPersistence>();
+    }
+
+    public void Start()
+    {
+        
+    }
+
+    public void Stop()
+    {
+        
     }
 }

@@ -1,9 +1,10 @@
+using Common.Service;
 using Common.Util;
 using CommonProductionHandler;
 
 namespace ProductionHandlerPlugin;
 
-public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
+public class RequestHandler : IPlugin, IResumable, IStopable, IResetable, ICommandable
 {
     public RequestHandler()
     {
@@ -48,5 +49,15 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
     private ProductionHandler GetProductionHandler()
     {
         return ServiceLocator.Instance.LocateAll<ProductionHandler>()[0];
+    }
+
+    public void Start()
+    {
+        throw new NotImplementedException();
+    }
+
+    void IPlugin.Stop()
+    {
+        throw new NotImplementedException();
     }
 }

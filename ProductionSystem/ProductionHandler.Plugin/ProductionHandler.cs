@@ -6,9 +6,9 @@ using Common.Data;
 using CommonAssetController;
 using Common.ProductionDataSource;
 using Common.Persistence;
+using Common.Service;
 
-
-public class ProductionHandler : IProductionDataSource
+public class ProductionHandler : IProductionDataSource , IPlugin
 {
     private Dictionary<string, IAssetController> _controllerRegistry;
     public event EventHandler<ProductionEvent>? EventHandler; // raise event on this, to notify ProductionDataSource
@@ -177,4 +177,13 @@ public class ProductionHandler : IProductionDataSource
         await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
 }
 
+    public void Start()
+    {
+        
+    }
+
+    public void Stop()
+    {
+        
+    }
 }

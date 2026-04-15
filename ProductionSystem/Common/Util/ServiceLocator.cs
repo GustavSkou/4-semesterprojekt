@@ -23,6 +23,9 @@ public sealed class ServiceLocator
         ImportAssemblyPlugins(pluginsDir);
     }
 
+    //
+    // Multipule call could be made to this still creating more than one instance of a given class
+    //
     public IReadOnlyList<T> LocateAll<T>() where T : class
     {
         var serviceType = typeof(T);
@@ -47,36 +50,22 @@ public sealed class ServiceLocator
 
             foreach (var candidateType in types)
             {
-                if (!isCandidate(candidateType, serviceType))
+                if (!IsCandidate(candidateType, serviceType))
                     continue;
 
-                // Create the instance of the services 
+                // Create the instance of the service
                 // Requires public parameterless constructor
-
-                // if the service already has been instanciated before
-                if (_serviceInstances[candidateType] != null)
+                if (_serviceInstances.TryGetValue(candidateType, out var existing))
                 {
-                    
-                } else {
-                    if (Activator.CreateInstance(candidateType) is T instance)
-                    {
-                        
-                        if (_serviceInstances[instance.GetType()] != null)
-                        {
-                            
-                        }
-                        services.Add(instance);
-                        
-
-
-                        _serviceInstances[instance.GetType()] = instance;
-                    }
+                    services.Add((T)existing);
                 }
-
-                
-            }
+                else if (Activator.CreateInstance(candidateType) is T created)
+                {
+                    _serviceInstances[candidateType] = created;
+                    services.Add(created);
+                }
+            }                
         }
-
         _serviceRegistry[serviceType] = services.Cast<object>().ToList();
         return services;
     }
@@ -90,7 +79,7 @@ public sealed class ServiceLocator
     /// Check if "candidateType" is a candidate for being instanciated as Type "serviceType"
     /// </summary>
     /// <returns></returns>
-    private bool isCandidate(Type? candidateType, Type serviceType)
+    private bool IsCandidate(Type? candidateType, Type serviceType)
     {
         if (candidateType is null || candidateType.IsAbstract || candidateType.IsInterface)
             return false;
@@ -99,16 +88,6 @@ public sealed class ServiceLocator
             return false;
 
         return true;
-    }
-
-    private bool IsAServiceImplementation(Type service)
-    {
-        if (service is null || service.IsAbstract || service.IsInterface)
-            return false;
-        else
-            return true;
-    
-        //service.IsClass
     }
 
     /// <summary>

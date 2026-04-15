@@ -8,6 +8,7 @@
     using System;
     using Common.Persistence;
     using System.Data.Common;
+    using Common.Service;
 
     public class Program
     {
@@ -18,8 +19,7 @@
             builder.WebHost.UseUrls("http://localhost:5027");
 
             var mvcBuilder = builder.Services.AddControllers();
-            foreach (var asm in serviceLocator.GetPluginAssemblies())
-            {
+            foreach (var asm in serviceLocator.GetPluginAssemblies()) {
                 mvcBuilder.PartManager.ApplicationParts.Add(new AssemblyPart(asm));
             }
             Console.WriteLine($"Loaded {serviceLocator.GetPluginAssemblies().Count} plugin assemblies.");
@@ -27,8 +27,10 @@
             
             app.MapControllers();
             
-            var db = serviceLocator.LocateAll<IPersistence>();
-            Console.WriteLine(db.First());
+            var plugins = serviceLocator.LocateAll<IPlugin>();
+            foreach (var plugin in plugins) {
+                plugin.Start();
+            }
             
             /*
                 var prodhandler = serviceLocator.LocateAll<IAssetController>();
