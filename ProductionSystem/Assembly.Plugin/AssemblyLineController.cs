@@ -45,13 +45,27 @@ public class AssemblyLineController : IAssetController
         try
         {
             await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-            Console.WriteLine("Assembly MQTT client connected.");
+            ProductionEventHandler?.Invoke(this, new ProductionEvent
+            {
+                DateAndTime = DateTime.Now,
+                Source = GetAssetName,
+                Type = "connection",
+                Level = "low",
+                Description = $"Assembly MQTT client connected"
+            });
             await SubscribeToTopics();
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred while connecting to the MQTT broker: {ex.Message}");
+            ProductionEventHandler?.Invoke(this, new ProductionEvent
+            {
+                DateAndTime = DateTime.Now,
+                Source = GetAssetName,
+                Type = "error",
+                Level = "high",
+                Description = $"An error occurred while connecting to the MQTT broker: {ex.Message}"
+            });
             return false;
         }
     }
@@ -61,12 +75,24 @@ public class AssemblyLineController : IAssetController
         try
         {
             await mqttClient.DisconnectAsync();
-            Console.WriteLine("Assembly MQTT client disconnected.");
+            ProductionEventHandler?.Invoke(this, new ProductionEvent {
+                DateAndTime = DateTime.Now,
+                Source = GetAssetName,
+                Type = "disconnected",
+                Level = "low",
+                Description = $"Assembly MQTT client disconnected"
+            });
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred while disconnecting from the MQTT broker: {ex.Message}");
+            ProductionEventHandler?.Invoke(this, new ProductionEvent {
+                DateAndTime = DateTime.Now,
+                Source = GetAssetName,
+                Type = "error",
+                Level = "high",
+                Description = $"An error occurred while disconnecting from the MQTT broker: {ex.Message}"
+            });
             return false;
         }
     }
@@ -143,7 +169,14 @@ public class AssemblyLineController : IAssetController
             .Build();
 
         await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
-        Console.WriteLine($"Sent MQTT message to emulator/operation: {payload}");
+
+        ProductionEventHandler?.Invoke(this, new ProductionEvent() {
+            DateAndTime = DateTime.Now,
+            Description = $"start assembly process {payload}",
+            Source = GetAssetName,
+            Type = "command",
+            Level = "low"
+        });
 
         var completedTask = await Task.WhenAny(
             _assemblyConfirmation.Task,
@@ -151,10 +184,23 @@ public class AssemblyLineController : IAssetController
 
         if (completedTask == _assemblyConfirmation.Task)
         {
+            ProductionEventHandler?.Invoke(this, new ProductionEvent() {
+                DateAndTime = DateTime.Now,
+                Description = $"Assembly process done",
+                Source = GetAssetName,
+                Type = "update",
+                Level = "low"
+            });
             return true;
         }
 
-        Console.WriteLine("Timed out waiting for assembly confirmation.");
+        ProductionEventHandler?.Invoke(this, new ProductionEvent() {
+            DateAndTime = DateTime.Now,
+            Description = $"Timed out waiting for assembly confirmation.",
+            Source = GetAssetName,
+            Type = "error",
+            Level = "high"
+        });
         return false;
     }
 }
