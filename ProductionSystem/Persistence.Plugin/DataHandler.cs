@@ -16,9 +16,10 @@ public class DataHandler : IPersistence, IPlugin
 
     public DataHandler()
     {
-        Console.WriteLine("[DataHandler instance]");
+        //Console.WriteLine("[DataHandler instance]");
         productionEvents = new ConcurrentQueue<ProductionEvent>();
 
+        // this should probably be move to a config file :)
         var connectionString = "Host=localhost;Port=5433;Database=configurepc;Username=configurepc;Password=configurepc";
 
         _dbOptions = new DbContextOptionsBuilder<ProductionDbContext>()
@@ -28,7 +29,7 @@ public class DataHandler : IPersistence, IPlugin
 
     public void SaveProductionEvent(ProductionEvent productionEvent)
     {
-        Console.WriteLine("Save Prod Event");
+        Console.WriteLine("Saving Production event");
         
         productionEvents.Enqueue(productionEvent);
         
