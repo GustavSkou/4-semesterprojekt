@@ -1,15 +1,14 @@
 ﻿namespace ProductionHandlerPlugin;
 
-
 using Common.Util;
 using Common.Data;
 
 using CommonAssetController;
 using Common.ProductionDataSource;
-using Common.Presistence;
+using Common.Persistence;
+using Common.Service;
 
-
-public class ProductionHandler : IProductionDataSource
+public class ProductionHandler : IProductionDataSource , IPlugin
 {
     private Dictionary<string, IAssetController> _controllerRegistry;
     public event EventHandler<ProductionEvent>? EventHandler; // raise event on this, to notify ProductionDataSource
@@ -35,7 +34,7 @@ public class ProductionHandler : IProductionDataSource
     private void OnProductionEvent(object? sender, ProductionEvent e)
     {
         Console.WriteLine(e);
-        //EventHandler?.Invoke(this, e);
+        EventHandler?.Invoke(this, e);
     }
 
     /// <summary>
@@ -67,6 +66,7 @@ public class ProductionHandler : IProductionDataSource
             _ = StartProduction();
         }
     }
+
     private async Task StartProduction()
     {
         if (_currentOrder == null)
@@ -86,7 +86,6 @@ public class ProductionHandler : IProductionDataSource
             Level = "low"
         });
     }
-
 
     private async Task<Task> HandleProduction()
     {
@@ -178,4 +177,13 @@ public class ProductionHandler : IProductionDataSource
         await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
 }
 
+    public void Start()
+    {
+        
+    }
+
+    public void Stop()
+    {
+        
+    }
 }

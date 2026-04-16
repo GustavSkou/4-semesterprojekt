@@ -6,6 +6,9 @@
     using Microsoft.Extensions.DependencyInjection;
     using Common.Util;
     using System;
+    using Common.Persistence;
+    using System.Data.Common;
+    using Common.Service;
 
     public class Program
     {
@@ -22,9 +25,28 @@
             }
             Console.WriteLine($"Loaded {serviceLocator.GetPluginAssemblies().Count} plugin assemblies.");
             var app = builder.Build();
-            
+
             app.MapControllers();
-            /*
+
+            var plugins = serviceLocator.LocateAll<IPlugin>();
+            foreach (var plugin in plugins)
+            {
+                plugin.Start();
+            }
+
+            app.Run();
+            app.Lifetime.ApplicationStopped.Register(() =>
+            {
+                var plugins = serviceLocator.LocateAll<IPlugin>();
+                foreach (var plugin in plugins)
+                {
+                    plugin.Stop();
+                }
+            });
+        }
+    }
+}
+/*
                 var prodhandler = serviceLocator.LocateAll<IAssetController>();
                 var controllers = serviceLocator.LocateAll<IAssetController>();
                 Dictionary<string, IAssetController> controlReg = new Dictionary<string, IAssetController>();
@@ -34,12 +56,5 @@
                         controlReg.Add(item.GetAssetName, item);
                     }
                 */
-            //Console.WriteLine($"Loaded {controllers.Count} asset controllers.");
-            
-
-            //controlReg["agv"].SendCommand(new AssetCommand("test",null));
-
-            app.Run();
-        }
-    }
-}
+// Console.WriteLine($"Loaded {controllers.Count} asset controllers.");
+// controlReg["agv"].SendCommand(new AssetCommand("test",null));

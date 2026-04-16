@@ -7,8 +7,8 @@
   </PropertyGroup>
 	
   <ItemGroup>
+	<ProjectReference Include="..\Common.Presistence\Common.Persistence.csproj" />
 	<ProjectReference Include="..\Common\Common.csproj" />
-	  <ProjectReference Include="..\Common.Presistence\Common.Presistence.csproj" />
 
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

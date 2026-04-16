@@ -3,7 +3,6 @@ namespace AGVController;
 using System.Text.Json;
 using System.Text;
 using System;
-using System.Timers;
 using System.Globalization;
 
 public partial class AGVController
@@ -32,7 +31,7 @@ public partial class AGVController
             try
             {
                 status = await ReadStatus();
-                Console.WriteLine(status.state);
+                // Console.WriteLine(status.state);
             }
             catch
             {
