@@ -35,7 +35,6 @@ public sealed class ServiceLocator
         if (_serviceRegistry.TryGetValue(serviceType, out var cached))
             return cached.Cast<T>().ToList();
 
-
         foreach (var asm in _pluginAssemblies.Append(Assembly.GetExecutingAssembly()))
         {
             IEnumerable<Type> types;
@@ -53,18 +52,18 @@ public sealed class ServiceLocator
                 if (!IsCandidate(candidateType, serviceType))
                     continue;
 
-                // Create the instance of the service
-                // Requires public parameterless constructor
                 if (_serviceInstances.TryGetValue(candidateType, out var existing))
                 {
                     services.Add((T)existing);
                 }
+                // Create the instance of the service
+                // Requires public parameterless constructor
                 else if (Activator.CreateInstance(candidateType) is T created)
                 {
                     _serviceInstances[candidateType] = created;
                     services.Add(created);
                 }
-            }                
+            }
         }
         _serviceRegistry[serviceType] = services.Cast<object>().ToList();
         return services;

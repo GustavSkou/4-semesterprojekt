@@ -19,7 +19,7 @@ public class RequestHandler : IPlugin, IResumable, IStopable, IResetable, IComma
                 Console.WriteLine("Order command");
                 OrderHandler.Instance.AddOrderCommandToQueue(command);
                 return;
-            
+
             case "Refill":
                 Console.WriteLine("Refill command");
                 await GetProductionHandler().RefillWarehouse();
@@ -51,13 +51,13 @@ public class RequestHandler : IPlugin, IResumable, IStopable, IResetable, IComma
         return ServiceLocator.Instance.LocateAll<ProductionHandler>()[0];
     }
 
-    public void Start()
+    void IPlugin.Start()
     {
-        throw new NotImplementedException();
+
     }
 
     void IPlugin.Stop()
     {
-        throw new NotImplementedException();
+
     }
 }
