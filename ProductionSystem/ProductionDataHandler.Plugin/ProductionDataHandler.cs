@@ -5,10 +5,13 @@ using Common.Data;
 using Common.Service;
 using Common.ProductionDataSource;
 using Common.Persistence;
+using Common.MonitorDataSource;
 
-public class ProductionDataHandler : IPlugin
+public class ProductionDataHandler : IPlugin, IMonitorDataSource
 {
     IPersistence persistenceService;
+
+    public event EventHandler<string>? MonitorDataSource;
 
     public ProductionDataHandler()
     {
@@ -22,9 +25,14 @@ public class ProductionDataHandler : IPlugin
         }
     }
 
+    public void PluginStart() {}
+
+    public void PluginDispose() {}
+
     private void OnProductionEvent(object? obj, ProductionEvent e)
     {
         Console.WriteLine("ProductionDataHandler : ProductionEvent");
+        MonitorDataSource.Invoke(this, e.Type);
         persistenceService.SaveProductionEvent(e);
     }
 
@@ -36,15 +44,5 @@ public class ProductionDataHandler : IPlugin
     private IReadOnlyList<IPersistence> GetPersistenceServices()
     {
         return ServiceLocator.Instance.LocateAll<IPersistence>();
-    }
-
-    public void Start()
-    {
-        
-    }
-
-    public void Stop()
-    {
-        
     }
 }
