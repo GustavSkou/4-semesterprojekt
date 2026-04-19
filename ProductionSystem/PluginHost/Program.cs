@@ -31,7 +31,7 @@
             var plugins = serviceLocator.LocateAll<IPlugin>();
             foreach (var plugin in plugins)
             {
-                plugin.Start();
+                plugin.PluginStart();
             }
 
             app.Run();
@@ -40,7 +40,7 @@
                 var plugins = serviceLocator.LocateAll<IPlugin>();
                 foreach (var plugin in plugins)
                 {
-                    plugin.Stop();
+                    plugin.PluginDispose();
                 }
             });
         }

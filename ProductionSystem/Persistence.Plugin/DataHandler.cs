@@ -108,7 +108,7 @@ public class DataHandler : IPersistence, IPlugin
     public Item[] GetComponents()
     {
         return Array.Empty<Item>();
-        /*
+        
         try
         {
             using var db = new ProductionDbContext(_dbOptions);
@@ -127,10 +127,9 @@ public class DataHandler : IPersistence, IPlugin
             Console.WriteLine($"Persistence fallback in GetComponents: {ex.Message}");
             return Array.Empty<Item>();
         }
-        */
     }
 
-    public void Start() { }
+    public void PluginStart() { }
 
-    public void Stop() { }
+    public void PluginDispose() { }
 }

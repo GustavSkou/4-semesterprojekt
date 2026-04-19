@@ -51,13 +51,7 @@ public class RequestHandler : IPlugin, IResumable, IStopable, IResetable, IComma
         return ServiceLocator.Instance.LocateAll<ProductionHandler>()[0];
     }
 
-    void IPlugin.Start()
-    {
+    void IPlugin.PluginStart() {}
 
-    }
-
-    void IPlugin.Stop()
-    {
-
-    }
+    void IPlugin.PluginDispose() {}
 }
