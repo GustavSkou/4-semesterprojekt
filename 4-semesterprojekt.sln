@@ -40,8 +40,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitoringPlugin", "Product
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PubSubController.Plugin", "ProductionSystem\PubSubController.Plugin\PubSubController.Plugin.csproj", "{94894716-6191-A097-972E-26E476CB215B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Warehouse.Plugin", "ProductionSystem\Warehouse.Plugin\Warehouse.Plugin.csproj", "{4F29B91A-14EA-F122-4482-18D6C2EE1B6B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,10 +102,6 @@ Global
 		{94894716-6191-A097-972E-26E476CB215B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94894716-6191-A097-972E-26E476CB215B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94894716-6191-A097-972E-26E476CB215B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4F29B91A-14EA-F122-4482-18D6C2EE1B6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4F29B91A-14EA-F122-4482-18D6C2EE1B6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4F29B91A-14EA-F122-4482-18D6C2EE1B6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4F29B91A-14EA-F122-4482-18D6C2EE1B6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -131,7 +125,6 @@ Global
 		{21611EB8-0566-7DAA-3A8B-5683FD44ABC9} = {B57F64CD-88CA-70DF-EF46-63BC75FBA174}
 		{828DC7FE-59F1-CAAF-FCC1-3491FBFDEDF2} = {21611EB8-0566-7DAA-3A8B-5683FD44ABC9}
 		{94894716-6191-A097-972E-26E476CB215B} = {B57F64CD-88CA-70DF-EF46-63BC75FBA174}
-		{4F29B91A-14EA-F122-4482-18D6C2EE1B6B} = {B57F64CD-88CA-70DF-EF46-63BC75FBA174}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B728E857-F466-45E7-8A11-381D6E8691E5}

@@ -6,6 +6,7 @@ import type {
   Machine,
   ProductionLog,
   LogLevel,
+  ProductionStage,
 } from '../types/production';
 
 interface ProductionContextType {
@@ -67,6 +68,31 @@ const emptyFlow: ProductionFlow = {
   delivery: 'pending',
 };
 
+const stageOrder: ProductionStage[] = [
+  'website',
+  'warehouse-receive',
+  'agv-to-assembly',
+  'assembly',
+  'agv-to-warehouse',
+  'warehouse-delivery',
+  'delivery'
+];
+
+function updateStage(flow: ProductionFlow, stage: ProductionStage, next: ProductionFlow[ProductionStage]): ProductionFlow {
+  const current = flow[stage];
+  const idx = stageOrder.indexOf(stage);
+
+  if (current === 'completed' && next !== 'completed') return flow;
+
+  if (next === 'in-progress' && idx > 0) {
+    const prev = stageOrder[idx -1];
+    if (flow[prev] !== 'completed') return flow;
+  }
+
+  if (current === next) return flow;
+  return { ...flow, [stage]: next };
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function ProductionProvider({ children }: { children: ReactNode }) {
@@ -77,7 +103,6 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
   const [machines, setMachines]                   = useState<Machine[]>(initialMachines);
   const [logs, setLogs]                           = useState<ProductionLog[]>([]);
   const [productionFlow, setProductionFlow]       = useState<ProductionFlow>({ ...emptyFlow });
-  const [isReadyForDelivery, setIsReadyForDelivery] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
   const addLog = useCallback((level: LogLevel, source: string, type: string, description: string) => {
@@ -122,7 +147,6 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
     setCurrentOrder(null);
     setProductionFlow({ ...emptyFlow });
     setMachines(prev => prev.map(m => ({ ...m, state: 'idle', currentTask: 'Standby' })));
-    setIsReadyForDelivery(false);
     addLog('info', 'Control', 'Reset', 'Production system reset');
   }, [addLog]);
 
@@ -139,22 +163,14 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
     addLog('info', 'System', 'Init', 'Production system initialized');
   }, [addLog]);
   
-  // ── Delivery completion ────────────────────────────────────────────────────
-
   useEffect(() => {
-    if (!isReadyForDelivery || !currentOrder) return;
+    const timers: number[] = [];
+    const setSafeTimeout = (fn: () => void, ms: number) => {
+      const id = window.setTimeout(fn, ms);
+      timers.push(id);
+      return id;
+    };
 
-    const timer = setTimeout(() => {
-      addLog('info', 'Delivery', 'Dispatch', `${currentOrder.id} out for delivery`);
-      setCurrentOrder(null);
-      setProductionFlow({ ...emptyFlow });
-      setIsReadyForDelivery(false);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [isReadyForDelivery, currentOrder, addLog]);
-
-  useEffect(() => {
     const source = new EventSource('http://localhost:5027/ProductionSystem/Events');
 
     source.onmessage = (event) => {
@@ -169,80 +185,85 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
       const levelMap: Record<string, LogLevel> = {
         low: 'info',
         medium: 'warning',
-        high: 'error',        
+        high: 'error',
       };
+
       addLog(
-        levelMap[e.Level?.toLowerCase()] ?? 'info',         
+        levelMap[e.Level?.toLowerCase()] ?? 'info',
         e.Source ?? 'System',
         e.Type ?? 'Event',
         e.Description ?? ''
       );
 
-      setMachines(prev => prev.map(m => {
-        const src = (e.Source ?? '').toLowerCase();
-        const matchesType =
+      const src = (e.Source ?? '').toLowerCase();
+      const desc = (e.Description ?? '').trim();
+
+      setMachines(prev =>
+        prev.map(m => {
+          const matchesType =
             (src.includes('warehouse') && m.type === 'warehouse') ||
             (src.includes('agv') && m.type === 'agv') ||
             (src.includes('assembly') && m.type === 'assembly');
 
-        if (matchesType) {
-            return { ...m, state: 'working', currentTask: e.Description ?? '' };
-        }
-        return m;
-      }));
+          return matchesType ? { ...m, state: 'working', currentTask: desc} : m;
+        })
+      );
 
-      const src = (e.Source ?? '').toLowerCase();
-      const desc = e.Description ?? '';
+      if ((e.Type ?? '').toLowerCase() === 'step-status') {
+        const [rawStage, rawState, ...messageParts] = desc.split('|');
+        const stage = (rawStage ?? '').trim() as ProductionStage;
+        const stateText = (rawState ?? '').trim().toLowerCase();
+        const message = messageParts.join('|').trim();
 
-      if (src.includes('warehouse') && !src.includes('warehouse5') && productionFlow['website'] === 'pending') {
-          setProductionFlow(prev => ({ ...prev, website: 'in-progress' }));
-          setStatusMessage('Order received — preparing warehouse...');
-          setTimeout(() => {
-              setProductionFlow(prev => ({ ...prev, website: 'completed', 'warehouse-receive': 'in-progress' }));
-              setStatusMessage('Warehouse picking items for AGV...');
-          }, 3000);
-      } else if (src === 'agv' && desc === 'MoveToAssemblyOperation') {
-          setProductionFlow(prev => ({ ...prev, 'warehouse-receive': 'completed', 'agv-to-assembly': 'in-progress' }));
-          setStatusMessage('AGV transporting items to assembly station...');
-      } else if (src === 'assembly') {
-          setProductionFlow(prev =>
-              prev['assembly'] === 'pending'
-                  ? { ...prev, 'agv-to-assembly': 'completed', assembly: 'in-progress' }
-                  : prev
+        if (!stageOrder.includes(stage))
+          return;
+
+        let nextState: ProductionFlow[ProductionStage] | null = null;
+        if (stateText === 'in-progress') nextState = 'in-progress';
+        else if (stateText === 'completed') nextState = 'completed';
+        else if (stateText === 'pending') nextState = 'pending';
+        else if (stateText === 'error') nextState = 'error';
+
+        if (!nextState)
+          return;
+
+        if (stage === 'website' && nextState === 'in-progress') {
+          setCurrentOrder(prev =>
+            prev ?? {
+              id: `ORD-${Date.now()}`,
+              cpu: '',
+              gpu: '',
+              ram: '',
+              storage: '',
+              motherboard: '',
+              powerSupply: '',
+              case: '',
+              createdAt: new Date(),
+            }
           );
-          setStatusMessage('Assembly station building the computer...');
-      } else if (src === 'agv' && desc === 'PickAssemblyOperation' && productionFlow['assembly'] !== 'pending') {
-          setProductionFlow(prev => ({ ...prev, assembly: 'completed', 'agv-to-warehouse': 'in-progress' }));
-          setStatusMessage('AGV returning assembled computer to warehouse...');
-      } else if (src === 'agv' && desc === 'PutWarehouseOperation' && productionFlow['warehouse-delivery'] === 'pending') {
-          setProductionFlow(prev => ({ ...prev, 'agv-to-warehouse': 'completed', 'warehouse-delivery': 'in-progress' }));
-          setStatusMessage('Inserting finished computer into warehouse...');
-          setTimeout(() => {
-              setProductionFlow(prev => ({ ...prev, 'warehouse-delivery': 'completed', delivery: 'in-progress' }));
-              setStatusMessage('Computer is out for delivery!');
-              setTimeout(() => {
-                  setProductionFlow({ ...emptyFlow });
-                  setCurrentOrder(null);
-                  setStatusMessage('Order complete.');
-              }, 3000);
-          }, 5000);
-      }
+        }
 
-      if (currentOrder === null && src.includes('warehouse') && !src.includes('warehouse5')) {
-        setCurrentOrder({
-            id: `ORD-${Date.now()}`,
-            cpu: '', gpu: '', ram: '', storage: '',
-            motherboard: '', powerSupply: '', case: '',
-            createdAt: new Date(),
-        });
+        setProductionFlow(prev => updateStage(prev, stage, nextState));
+        setStatusMessage(message || `${stage} ${nextState}`);
+
+        if (stage === 'delivery' && nextState === 'completed') {
+          setSafeTimeout(() => {
+            setProductionFlow({ ...emptyFlow });
+            setCurrentOrder(null);
+            setStatusMessage('Order complete.');
+          }, 3000);
+        }
       }
     };
 
     source.onerror = () => {
       setMachines(prev => prev.map(m => ({ ...m, status: 'disconnected' as const })));
-    }
+    };
 
-    return () => source.close();
+    return () => {
+      source.close();
+      timers.forEach(t => clearTimeout(t));
+    };
   }, [addLog]);
 
   return (

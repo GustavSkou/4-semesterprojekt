@@ -7,10 +7,12 @@ using MQTTnet;
 using MQTTnet.Packets;
 using MQTTnet.Protocol;
 using System;
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 
@@ -20,8 +22,8 @@ public class AssemblyLineController : IAssetController
     private readonly MqttClientOptions mqttClientOptions;
     private readonly MqttClientFactory mqttFactory;
 
-    private TaskCompletionSource<bool>? _assemblyConfirmation;
     private TaskCompletionSource<bool>? _healthCheckConfirmation;
+    private readonly SemaphoreSlim _runGate = new(1, 1);
 
     static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -125,38 +127,32 @@ public class AssemblyLineController : IAssetController
     /*
         Handle update on subribe topics 
      */
+
+    private void EmitStepStatus(string status, string description, string level = "low")
+    {
+        ProductionEventHandler?.Invoke(this, new ProductionEvent() {
+            DateAndTime = DateTime.Now,
+            Source = GetAssetName,
+            Type = "step-status",
+            Level = level,
+            Description = $"{status}: {description}"
+        });
+    }
+
     private Task HandleReceivedMessage(MqttApplicationMessageReceivedEventArgs e)
     {
-        var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);       
+        var payload = e.ApplicationMessage.Payload;
+        var payloadString = payload.IsEmpty
+            ? string.Empty
+            : Encoding.UTF8.GetString(payload.ToArray());
 
         if (e.ApplicationMessage.Topic == "emulator/status")
         {
-            if (_assemblyConfirmation != null)
-            {
-                ProductionEventHandler?.Invoke(this, new ProductionEvent
-                {
-                    DateAndTime = DateTime.Now,
-                    Source = GetAssetName,
-                    Type = "status",
-                    Level = "low",
-                    Description = $"Assembly status: {payloadString}"
-                });
-            }
+            EmitStepStatus("in-progress", $"Assembly status: {payloadString}");
         } 
         else if (e.ApplicationMessage.Topic == "emulator/checkhealth") 
         {
-            ProductionEventHandler?.Invoke(this, new ProductionEvent
-            {
-                DateAndTime = DateTime.Now,
-                Source = GetAssetName,
-                Type = "completion",
-                Level = "low",
-                Description = "Assembly finished"
-            });
-        
             _healthCheckConfirmation?.TrySetResult(true);
-            _healthCheckConfirmation = null;
-            _assemblyConfirmation = null;
         }
 
         return Task.CompletedTask;
@@ -167,65 +163,53 @@ public class AssemblyLineController : IAssetController
         if (command.Name != "start")
             return false;
 
-        if (!mqttClient.IsConnected)
+        await _runGate.WaitAsync();
+        try 
         {
-            var connected = await Connect();
-            if (!connected)
-                return false;
+            if (!mqttClient.IsConnected)
+            {
+                var connected = await Connect();
+                if (!connected)
+                    return false;
+            }
+
+            _healthCheckConfirmation = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var payloadDictionary = new Dictionary<string, string>
+            {
+                { "ProcessID", "123" }
+            };
+
+            string payload = JsonSerializer.Serialize(payloadDictionary);
+
+            var applicationMessage = new MqttApplicationMessageBuilder()
+                .WithTopic("emulator/operation")
+                .WithPayload(payload)
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+
+            EmitStepStatus("in-progress", $"Assembly started {payload}");
+            await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+
+            var confirmationTask = _healthCheckConfirmation.Task;
+            var completedTask = await Task.WhenAny(
+                confirmationTask,
+                Task.Delay(TimeSpan.FromSeconds(60)));
+
+            if (completedTask == confirmationTask)
+            {
+                EmitStepStatus("done", $"Assembly finished");
+                return true;
+            }
+
+            EmitStepStatus("error", $"Timed out waiting for assembly confirmation.", "high");
+            return false;
         }
-
-        _assemblyConfirmation = new TaskCompletionSource<bool>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        _healthCheckConfirmation = new TaskCompletionSource<bool>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-
-        Dictionary<string, string> payloadDictionary = new()
+        finally
         {
-            { "ProcessID", "123" }
-        };
-
-        string payload = JsonSerializer.Serialize(payloadDictionary);
-
-        var applicationMessage = new MqttApplicationMessageBuilder()
-            .WithTopic("emulator/operation")
-            .WithPayload(payload)
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
-            .Build();
-
-        await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
-
-        ProductionEventHandler?.Invoke(this, new ProductionEvent() {
-            DateAndTime = DateTime.Now,
-            Description = $"start assembly process {payload}",
-            Source = GetAssetName,
-            Type = "command",
-            Level = "low"
-        });
-
-        var confirmationTask = _healthCheckConfirmation.Task;
-        var completedTask = await Task.WhenAny(
-            confirmationTask,
-            Task.Delay(TimeSpan.FromSeconds(60)));
-
-        if (completedTask == confirmationTask)
-        {
-            ProductionEventHandler?.Invoke(this, new ProductionEvent() {
-                DateAndTime = DateTime.Now,
-                Description = $"Assembly process done",
-                Source = GetAssetName,
-                Type = "update",
-                Level = "low"
-            });
-            return true;
+            _healthCheckConfirmation = null;
+            _runGate.Release();
         }
-
-        ProductionEventHandler?.Invoke(this, new ProductionEvent() {
-            DateAndTime = DateTime.Now,
-            Description = $"Timed out waiting for assembly confirmation.",
-            Source = GetAssetName,
-            Type = "error",
-            Level = "high"
-        });
-        return false;
     }
 }

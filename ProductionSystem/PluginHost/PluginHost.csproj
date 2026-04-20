@@ -26,7 +26,7 @@
     <ProjectReference Include="..\Common.AssetController\Common.AssetController.csproj" />
     <ProjectReference Include="..\Common.ProductionHandler\Common.ProductionHandler.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
-    <ProjectReference Include="..\Common.Presistence\Common.Persistence.csproj" />
+    <ProjectReference Include="..\Common.Persistence\Common.Persistence.csproj" />
 
     <PluginProject Include="..\Agv.Plugin\Agv.Plugin.csproj" />
     <PluginProject Include="..\Assembly.Plugin\Assembly.Plugin.csproj" />

@@ -4,7 +4,7 @@
   <Project Path="Assembly.Plugin/Assembly.Plugin.csproj" />
   <Project Path="Common.AssetController/Common.AssetController.csproj" />
   <Project Path="Common.MonitorDataSource/Common.MonitorDataSource.csproj" />
-  <Project Path="Common.Presistence/Common.Persistence.csproj" Id="7c5f04b3-56c0-48f8-957b-fb62c01227f9" />
+  <Project Path="Common.Persistence/Common.Persistence.csproj" Id="7c5f04b3-56c0-48f8-957b-fb62c01227f9" />
   <Project Path="Common.ProductionDataSource/Common.DataSource.csproj" />
   <Project Path="Common.ProductionHandler/Common.ProductionHandler.csproj" />
   <Project Path="Common.PubSubDataSource/Common.PubSubDataSource.csproj" />

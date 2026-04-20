@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-  <ProjectReference Include="..\Common.Presistence\Common.Persistence.csproj" />
+  <ProjectReference Include="..\Common.Persistence\Common.Persistence.csproj" />
   <ProjectReference Include="..\Common.ProductionDataSource\Common.DataSource.csproj" />
   <projectReference Include="..\Common\Common.csproj" />
   <projectReference Include="..\Common.MonitorDataSource\Common.MonitorDataSource.csproj" />

@@ -7,7 +7,7 @@
   </PropertyGroup>
 	
   <ItemGroup>
-	<ProjectReference Include="..\Common.Presistence\Common.Persistence.csproj" />
+  <ProjectReference Include="..\Common.Persistence\Common.Persistence.csproj" />
 	<ProjectReference Include="..\Common\Common.csproj" />
 
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
