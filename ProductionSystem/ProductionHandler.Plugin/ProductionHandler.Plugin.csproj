@@ -12,5 +12,6 @@
     <ProjectReference Include="..\Common.ProductionHandler\Common.ProductionHandler.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\Common.Presistence\Common.Presistence.csproj" />
+    <ProjectReference Include="..\Common.PubSubDataSource\Common.PubSubDataSource.csproj" />
   </ItemGroup>
 </Project>

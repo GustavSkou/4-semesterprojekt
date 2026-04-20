@@ -7,6 +7,7 @@ using Common.Data;
 using CommonAssetController;
 using Common.ProductionDataSource;
 using Common.Presistence;
+using Common.PubSubDataSource;
 
 
 public class ProductionHandler : IProductionDataSource
@@ -36,6 +37,8 @@ public class ProductionHandler : IProductionDataSource
     {
         Console.WriteLine(e);
         //EventHandler?.Invoke(this, e);
+        var pubSubs = ServiceLocator.Instance.LocateAll<IPubSubDataSource>();
+        if (pubSubs.Count > 0) pubSubs[0].Publish(e);
     }
 
     /// <summary>
@@ -107,7 +110,6 @@ public class ProductionHandler : IProductionDataSource
         await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
         await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
         await InsertFinishedProduct();
-        return Task.CompletedTask;
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
-﻿namespace Common.PubSubDataSource;
+﻿using Common.Data;
+
+namespace Common.PubSubDataSource;
 
 public interface IPubSubDataSource
 {
-    public event EventHandler EventHandler;
+    void Publish(ProductionEvent e);
 }

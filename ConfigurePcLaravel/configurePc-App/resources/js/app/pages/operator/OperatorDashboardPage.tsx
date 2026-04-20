@@ -22,11 +22,11 @@ const stageIcons: Record<ProductionStage, ElementType> = {
 
 const stageLabels: Record<ProductionStage, string> = {
   website:              'Website Order',
-  'warehouse-receive':  'Warehouse Receiving',
+  'warehouse-receive':  'Warehouse Picking',
   'agv-to-assembly':    'AGV Transport',
   assembly:             'Assembly Station',
   'agv-to-warehouse':   'AGV Return',
-  'warehouse-delivery': 'Ready for Delivery',
+  'warehouse-delivery': 'Inserting into Warehouse',
   delivery:             'Out for Delivery',
 };
 
@@ -70,7 +70,7 @@ function systemStatusColor(status: string): string {
 export function OperatorDashboardPage() {
   const {
     productionStatus, currentOrder, queue, productionFlow,
-    stopProduction, resetProduction, resumeProduction,
+    stopProduction, resetProduction, resumeProduction, statusMessage,
   } = useProduction();
 
   return (
@@ -118,6 +118,10 @@ export function OperatorDashboardPage() {
           })}
         </div>
       </div>
+
+      {statusMessage && (
+        <p className="mt-4 text-sm text-zinc-400 text-center">{statusMessage}</p>
+      )}
 
       {/* Three-column bottom section */}
       <div className="grid grid-cols-3 gap-6">

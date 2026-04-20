@@ -2,10 +2,13 @@ namespace AssemblyLineController;
 
 using Common.Data;
 using CommonAssetController;
+using Microsoft.VisualBasic;
 using MQTTnet;
 using MQTTnet.Packets;
 using MQTTnet.Protocol;
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -18,6 +21,7 @@ public class AssemblyLineController : IAssetController
     private readonly MqttClientFactory mqttFactory;
 
     private TaskCompletionSource<bool>? _assemblyConfirmation;
+    private TaskCompletionSource<bool>? _healthCheckConfirmation;
 
     static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -80,7 +84,10 @@ public class AssemblyLineController : IAssetController
     {
         var topicFilter = mqttFactory.CreateTopicFilterBuilder().WithTopic("emulator/status").WithAtLeastOnceQoS();
 
-        var mqttSubscribeOptions = mqttFactory.CreateSubscribeOptionsBuilder().WithTopicFilter(topicFilter).Build();
+        var mqttSubscribeOptions = mqttFactory.CreateSubscribeOptionsBuilder()
+            .WithTopicFilter(topicFilter)
+            .WithTopicFilter(f => f.WithTopic("emulator/checkhealth").WithAtLeastOnceQoS())
+            .Build();
 
         var response = await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
 
@@ -95,20 +102,35 @@ public class AssemblyLineController : IAssetController
     private Task HandleReceivedMessage(MqttApplicationMessageReceivedEventArgs e)
     {
         var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);       
-        Console.WriteLine($"Received MQTT message on topic '{e.ApplicationMessage.Topic}': {payloadString}");
 
         if (e.ApplicationMessage.Topic == "emulator/status")
+        {
+            if (_assemblyConfirmation != null)
+            {
+                ProductionEventHandler?.Invoke(this, new ProductionEvent
+                {
+                    DateAndTime = DateTime.Now,
+                    Source = GetAssetName,
+                    Type = "status",
+                    Level = "low",
+                    Description = $"Assembly status: {payloadString}"
+                });
+            }
+        } 
+        else if (e.ApplicationMessage.Topic == "emulator/checkhealth") 
         {
             ProductionEventHandler?.Invoke(this, new ProductionEvent
             {
                 DateAndTime = DateTime.Now,
                 Source = GetAssetName,
-                Type = "confirmation",
+                Type = "completion",
                 Level = "low",
-                Description = $"Assembly confirmation received: {payloadString}"
+                Description = "Assembly finished"
             });
-
-            _assemblyConfirmation?.TrySetResult(true);
+        
+            _healthCheckConfirmation?.TrySetResult(true);
+            _healthCheckConfirmation = null;
+            _assemblyConfirmation = null;
         }
 
         return Task.CompletedTask;
@@ -128,6 +150,8 @@ public class AssemblyLineController : IAssetController
 
         _assemblyConfirmation = new TaskCompletionSource<bool>(
             TaskCreationOptions.RunContinuationsAsynchronously);
+        _healthCheckConfirmation = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
 
         Dictionary<string, string> payloadDictionary = new()
         {
@@ -145,11 +169,12 @@ public class AssemblyLineController : IAssetController
         await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
         Console.WriteLine($"Sent MQTT message to emulator/operation: {payload}");
 
+        var confirmationTask = _healthCheckConfirmation.Task;
         var completedTask = await Task.WhenAny(
-            _assemblyConfirmation.Task,
-            Task.Delay(TimeSpan.FromSeconds(30)));
+            confirmationTask,
+            Task.Delay(TimeSpan.FromSeconds(60)));
 
-        if (completedTask == _assemblyConfirmation.Task)
+        if (completedTask == confirmationTask)
         {
             return true;
         }
