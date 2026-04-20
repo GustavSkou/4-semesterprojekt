@@ -45,7 +45,14 @@ public abstract class WarehouseController : IWarehouseController
                 foreach (var item in command.Items ?? [])
                 {
                     await Client.PickItemAsync(ToLocalTray(item.TrayId));
-                    Console.WriteLine($"Picked item from tray {item.TrayId}");
+                    ProductionEventHandler?.Invoke(this, new ProductionEvent() {
+                        DateAndTime = DateTime.Now,
+                        Description = $"Picked item from tray {item.TrayId}",
+                        Source = GetAssetName,
+                        Type = "command",
+                        Level = "low"
+                    });
+                    //Console.WriteLine($"Picked item from tray {item.TrayId}");
                     await Task.Delay(1000);
                 }
                 return true;
@@ -59,7 +66,16 @@ public abstract class WarehouseController : IWarehouseController
 
                 int globalId = emptyIds.First();
                 await Client.InsertItemAsync(ToLocalTray(globalId), "Finished PC");
-                Console.WriteLine($"Inserted finished product into tray {globalId}");
+                
+                ProductionEventHandler?.Invoke(this, new ProductionEvent() {
+                    DateAndTime = DateTime.Now,
+                    Description = $"Inserted finished product into tray {globalId}",
+                    Source = GetAssetName,
+                    Type = "command",
+                    Level = "low"
+                });
+
+                //Console.WriteLine($"Inserted finished product into tray {globalId}");
                 return true;
             }
             
@@ -77,7 +93,14 @@ public abstract class WarehouseController : IWarehouseController
                 foreach (var id in idsToRefill)
                 {
                     await Client.InsertItemAsync(ToLocalTray(id), $"Item {id}");
-                    Console.WriteLine($"Refilled item in tray {id}");
+
+                    ProductionEventHandler?.Invoke(this, new ProductionEvent() {
+                        DateAndTime = DateTime.Now,
+                        Description = $"Refilled item in tray {id}",
+                        Source = GetAssetName,
+                        Type = "command",
+                        Level = "low"
+                    });
                     await Task.Delay(1000);
                 } 
 

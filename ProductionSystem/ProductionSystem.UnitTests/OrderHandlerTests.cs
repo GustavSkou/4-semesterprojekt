@@ -24,7 +24,7 @@ public class OrderHandlerTests
     }
 
     // Test 2: "Hvad hvis der mangler data?"
-    // Hvis Parameters er null, skal vi fa en fejl.
+    // Hvis Parameters er null, skal vi få en fejl.
     [Fact]
     public void ParseCommandToOrder_ThrowsWhenParametersMissing()
     {

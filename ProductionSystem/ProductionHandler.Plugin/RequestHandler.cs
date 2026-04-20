@@ -1,9 +1,10 @@
+using Common.Service;
 using Common.Util;
 using CommonProductionHandler;
 
 namespace ProductionHandlerPlugin;
 
-public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
+public class RequestHandler : IPlugin, IResumable, IStopable, IResetable, ICommandable
 {
     public RequestHandler()
     {
@@ -18,7 +19,7 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
                 Console.WriteLine("Order command");
                 OrderHandler.Instance.AddOrderCommandToQueue(command);
                 return;
-            
+
             case "Refill":
                 Console.WriteLine("Refill command");
                 await GetProductionHandler().RefillWarehouse();
@@ -49,4 +50,8 @@ public class RequestHandler : IResumable, IStopable, IResetable, ICommandable
     {
         return ServiceLocator.Instance.LocateAll<ProductionHandler>()[0];
     }
+
+    void IPlugin.PluginStart() {}
+
+    void IPlugin.PluginDispose() {}
 }

@@ -67,6 +67,13 @@ php artisan test
 dotnet test ProductionSystem/ProductionSystem.UnitTests/ProductionSystem.UnitTests.csproj
 ```
 
+### ProductionSystem integration tests
+```bash
+dotnet test ProductionSystem/ProductionSystem.IntegrationTests/ProductionSystem.IntegrationTests.csproj
+```
+
+Integrationstests starter automatisk `PluginHost` hvis serveren ikke allerede kører, så du behøver ikke først at køre `dotnet run` manuelt.
+
 ---
 
 ##  Troubleshooting (C#)

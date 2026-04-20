@@ -1,6 +1,6 @@
 ﻿using Common.Data;
 
-namespace Common.Presistence;
+namespace Common.Persistence;
 
 public interface IPersistence
 {

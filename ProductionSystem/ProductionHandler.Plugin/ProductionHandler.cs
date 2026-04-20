@@ -1,16 +1,15 @@
 ﻿namespace ProductionHandlerPlugin;
 
-
 using Common.Util;
 using Common.Data;
 
 using CommonAssetController;
 using Common.ProductionDataSource;
-using Common.Presistence;
+using Common.Persistence;
+using Common.Service;
 using Common.PubSubDataSource;
 
-
-public class ProductionHandler : IProductionDataSource
+public class ProductionHandler : IProductionDataSource , IPlugin
 {
     private Dictionary<string, IAssetController> _controllerRegistry;
     public event EventHandler<ProductionEvent>? EventHandler; // raise event on this, to notify ProductionDataSource
@@ -36,7 +35,7 @@ public class ProductionHandler : IProductionDataSource
     private void OnProductionEvent(object? sender, ProductionEvent e)
     {
         Console.WriteLine(e);
-        //EventHandler?.Invoke(this, e);
+        EventHandler?.Invoke(this, e);
         var pubSubs = ServiceLocator.Instance.LocateAll<IPubSubDataSource>();
         if (pubSubs.Count > 0) pubSubs[0].Publish(e);
     }
@@ -50,7 +49,6 @@ public class ProductionHandler : IProductionDataSource
 
         if (_state != ProductionState.idle)
             return;
-
 
         if (OrderHandler.Instance.OrderQueue.Count > 0)
         {
@@ -70,6 +68,7 @@ public class ProductionHandler : IProductionDataSource
             _ = StartProduction();
         }
     }
+
     private async Task StartProduction()
     {
         if (_currentOrder == null)
@@ -84,32 +83,46 @@ public class ProductionHandler : IProductionDataSource
         {
             DateAndTime = DateTime.Now,
             Description = $"Order {_currentOrder.Id} completed",
-            Source = "production-handler",
-            Type = "completed",
+            Source = "production handler",
+            Type = "order completed",
             Level = "low"
         });
     }
 
-
-    private async Task HandleProduction()
+    private async Task<Task> HandleProduction()
     {
-        if (_currentOrder == null)
-            return;
+        try {
+            if (_currentOrder == null)
+                return Task.CompletedTask;
 
-        foreach (var group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
-            await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));
-        await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
-        await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
-        await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
-        await GetController("agv").SendCommand(new AssetCommand("PutAssemblyOperation", null));
+            foreach (var group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
+                await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));
 
-        await GetController("assembly").SendCommand(new AssetCommand("start", null));
+            await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
+            await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
+            await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
+            await GetController("agv").SendCommand(new AssetCommand("PutAssemblyOperation", null));
 
-        await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
-        await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", _currentOrder.Items));
-        await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
-        await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
-        await InsertFinishedProduct();
+            await GetController("assembly").SendCommand(new AssetCommand("start", null));
+
+            await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
+            await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", _currentOrder.Items));
+            await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
+            await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
+            await InsertFinishedProduct();
+        } 
+        catch (Exception ex) {
+            EventHandler?.Invoke(this, new ProductionEvent() {
+                DateAndTime = DateTime.Now,
+                Description = $"{ex}",
+                Source = "production handler",
+                Type = "error",
+                Level = "high"
+            });
+            _state = ProductionState.paused;
+            Console.WriteLine("Error Production paused");
+        }
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -173,11 +186,20 @@ public class ProductionHandler : IProductionDataSource
     }
 
     public async Task PopulateWarehouses()
-{
-    var components = ServiceLocator.Instance.LocateAll<IPersistence>()[0].GetComponents();
-    
-    foreach (var group in components.GroupBy(c => GetWarehouseForTray(c.TrayId)))
-        await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
-}
+    {
+        var components = ServiceLocator.Instance.LocateAll<IPersistence>()[0].GetComponents();
+        
+        foreach (var group in components.GroupBy(c => GetWarehouseForTray(c.TrayId)))
+            await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
+    }
 
+    public void PluginStart()
+    {
+        
+    }
+
+    public void PluginDispose()
+    {
+        
+    }
 }

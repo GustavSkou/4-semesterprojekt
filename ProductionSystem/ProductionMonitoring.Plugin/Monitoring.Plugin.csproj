@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Common.ProductionHandler\Common.ProductionHandler.csproj" />
+    <ProjectReference Include="..\Common.MonitorDataSource\Common.MonitorDataSource.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -2,5 +2,5 @@
 
 public interface IMonitorDataSource
 {
-    public event EventHandler EventHandler;
+    public event EventHandler<string> MonitorDataSource;
 }
