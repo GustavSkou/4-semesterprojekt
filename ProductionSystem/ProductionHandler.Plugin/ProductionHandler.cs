@@ -26,8 +26,18 @@ public class ProductionHandler : IProductionDataSource , IPlugin
         foreach (IAssetController controller in GetAssetControllers())
         {
             controller.ProductionEventHandler += OnProductionEvent;
-            controller.Connect().GetAwaiter().GetResult();
             _controllerRegistry.Add(controller.GetAssetName, controller);
+
+            try
+            {
+                var connected = controller.Connect().GetAwaiter().GetResult();
+                if (!connected)
+                    Console.WriteLine($"Asset controller '{controller.GetAssetName}' is unavailable during startup.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Asset controller '{controller.GetAssetName}' failed during startup: {ex}");
+            }
         }
 
         _ = PopulateWarehouses();

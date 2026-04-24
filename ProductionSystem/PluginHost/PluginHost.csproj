@@ -48,7 +48,7 @@
   </ItemGroup>
 
   <Target Name="BuildAndCopyPlugins" AfterTargets="Build">
-    <MSBuild Projects="@(PluginProject)" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);OutputPath=bin\$(Configuration)\$(TargetFramework)\;CopyLocalLockFileAssemblies=true" />
+    <MSBuild Projects="@(PluginProject)" Targets="Restore;Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);OutputPath=bin\$(Configuration)\$(TargetFramework)\;CopyLocalLockFileAssemblies=true" />
     <RemoveDir Directories="$(RepoPluginsDir)" />
     <MakeDir Directories="$(RepoPluginsDir)" />
     <ItemGroup>

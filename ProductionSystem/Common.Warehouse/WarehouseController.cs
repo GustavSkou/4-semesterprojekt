@@ -159,9 +159,36 @@ public abstract class WarehouseController : IWarehouseController
 
     public virtual async Task<bool> Connect()
     {
-        if (ClearOnConnect)
-            await SendCommand(new AssetCommand("Clear", null));
-        return true;
+        try
+        {
+            if (ClearOnConnect)
+                await SendCommand(new AssetCommand("Clear", null));
+
+            ProductionEventHandler?.Invoke(this, new ProductionEvent
+            {
+                DateAndTime = DateTime.Now,
+                Source = GetAssetName,
+                Type = "connection",
+                Level = "low",
+                Description = $"Connected to {GetAssetName}"
+            });
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ProductionEventHandler?.Invoke(this, new ProductionEvent
+            {
+                DateAndTime = DateTime.Now,
+                Source = GetAssetName,
+                Type = "error",
+                Level = "high",
+                Description = $"Failed to connect to {GetAssetName}: {ex.Message}"
+            });
+
+            Console.WriteLine($"Failed to connect to {GetAssetName}: {ex}");
+            return false;
+        }
     }
 
     Task<bool> IAssetController.Disconnect()
