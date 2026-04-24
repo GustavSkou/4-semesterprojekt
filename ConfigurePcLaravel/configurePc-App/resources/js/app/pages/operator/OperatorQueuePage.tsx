@@ -40,7 +40,7 @@ export function OperatorQueuePage() {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <p className="text-xs text-zinc-400 mb-1">Order ID</p>
-                <p className="text-white font-mono">{currentOrder.id}</p>
+                <p className="text-white font-mono">#{currentOrder.orderId}</p>
               </div>
               <div>
                 <p className="text-xs text-zinc-400 mb-1">Created</p>
@@ -48,24 +48,19 @@ export function OperatorQueuePage() {
               </div>
             </div>
             <div className="border-t border-zinc-700 pt-4">
-              <p className="text-sm font-medium text-white mb-3">Components</p>
+              <p className="text-sm font-medium text-white mb-3">Queue Payload</p>
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  ['CPU',          currentOrder.cpu],
-                  ['GPU',          currentOrder.gpu],
-                  ['RAM',          currentOrder.ram],
-                  ['Storage',      currentOrder.storage],
-                  ['Motherboard',  currentOrder.motherboard],
-                  ['Power Supply', currentOrder.powerSupply],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-lg p-3 bg-zinc-900">
-                    <p className="text-xs text-zinc-500 mb-1">{label}</p>
-                    <p className="text-sm text-white">{value}</p>
-                  </div>
-                ))}
+                <div className="rounded-lg p-3 bg-zinc-900">
+                  <p className="text-xs text-zinc-500 mb-1">Status</p>
+                  <p className="text-sm text-white uppercase tracking-wide">{currentOrder.status}</p>
+                </div>
+                <div className="rounded-lg p-3 bg-zinc-900">
+                  <p className="text-xs text-zinc-500 mb-1">Tray Count</p>
+                  <p className="text-sm text-white">{currentOrder.itemTrayIds.length}</p>
+                </div>
                 <div className="rounded-lg p-3 col-span-2 bg-zinc-900">
-                  <p className="text-xs text-zinc-500 mb-1">Case</p>
-                  <p className="text-sm text-white">{currentOrder.case}</p>
+                  <p className="text-xs text-zinc-500 mb-1">Tray IDs</p>
+                  <p className="text-sm text-white">{currentOrder.itemTrayIds.join(', ') || '-'}</p>
                 </div>
               </div>
             </div>
@@ -77,7 +72,7 @@ export function OperatorQueuePage() {
       <div className="space-y-4">
         {queue.map((order, index) => (
           <div
-            key={order.id}
+            key={order.orderId}
             className="rounded-xl p-6 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors"
           >
             <div className="flex items-start justify-between mb-4">
@@ -86,31 +81,22 @@ export function OperatorQueuePage() {
                   <span className="text-blue-400 text-sm font-semibold">#{index + 1}</span>
                 </div>
                 <div>
-                  <p className="text-white font-mono font-semibold">{order.id}</p>
+                  <p className="text-white font-mono font-semibold">#{order.orderId}</p>
                   <p className="text-sm text-zinc-400">Created: {order.createdAt.toLocaleString()}</p>
                 </div>
               </div>
               <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full border bg-zinc-700/40 border-zinc-700 text-zinc-400">
-                Pending
+                {order.status}
               </span>
             </div>
             <div className="grid grid-cols-4 gap-3">
-              {[
-                ['CPU',          order.cpu],
-                ['GPU',          order.gpu],
-                ['RAM',          order.ram],
-                ['Storage',      order.storage],
-                ['Motherboard',  order.motherboard],
-                ['Power Supply', order.powerSupply],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-lg p-3 bg-zinc-800">
-                  <p className="text-xs text-zinc-500 mb-1">{label}</p>
-                  <p className="text-sm text-white">{value}</p>
-                </div>
-              ))}
               <div className="rounded-lg p-3 col-span-2 bg-zinc-800">
-                <p className="text-xs text-zinc-500 mb-1">Case</p>
-                <p className="text-sm text-white">{order.case}</p>
+                <p className="text-xs text-zinc-500 mb-1">Tray IDs</p>
+                <p className="text-sm text-white">{order.itemTrayIds.join(', ') || '-'}</p>
+              </div>
+              <div className="rounded-lg p-3 col-span-2 bg-zinc-800">
+                <p className="text-xs text-zinc-500 mb-1">Items</p>
+                <p className="text-sm text-white">{order.itemTrayIds.length}</p>
               </div>
             </div>
           </div>

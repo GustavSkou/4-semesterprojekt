@@ -109,7 +109,7 @@ function StatusNode({
 }
 
 export function OrderStatusPage() {
-  const { hasActiveOrder, orderInfo, orderStatus, selectedComponents, advanceOrderStatus } = useApp();
+  const { hasActiveOrder, orderInfo, currentOrderId, orderStatus, selectedComponents } = useApp();
   const navigate = useNavigate();
 
   const selectedList = categories
@@ -154,17 +154,10 @@ export function OrderStatusPage() {
               {' · '}
               <span className="text-slate-600">{orderInfo?.email}</span>
             </p>
+            {currentOrderId != null && (
+              <p className="text-xs mt-1 text-slate-500">Order ID: #{currentOrderId}</p>
+            )}
           </div>
-          {/* Demo advance button */}
-          {orderStatus < ORDER_STATUSES.length - 1 && (
-            <button
-              onClick={advanceOrderStatus}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-all hover:opacity-80 bg-line text-slate-500 border border-line-card"
-            >
-              Simulate Next Step
-              <ChevronRight size={12} />
-            </button>
-          )}
         </div>
       </div>
 

@@ -25,6 +25,20 @@ export interface ComputerOrder {
   createdAt: Date;
 }
 
+export type QueueOrderStatus = 'pending' | 'in-progress' | 'paused';
+
+export interface QueueOrder {
+  orderId: number;
+  createdAt: Date;
+  status: QueueOrderStatus;
+  itemTrayIds: number[];
+}
+
+export interface QueueSnapshot {
+  currentOrder: QueueOrder | null;
+  queuedOrders: QueueOrder[];
+}
+
 export type MachineState = 'idle' | 'working' | 'error' | 'offline';
 
 export interface Machine {
@@ -45,6 +59,14 @@ export interface ProductionLog {
   source: string;
   type: string;
   description: string;
+}
+
+export interface OrderStatusSnapshot {
+  orderId: number;
+  stage: ProductionStage;
+  state: StageState;
+  message: string;
+  updatedAt: Date;
 }
 
 export type ProductionStatus = 'running' | 'stopped' | 'reset';

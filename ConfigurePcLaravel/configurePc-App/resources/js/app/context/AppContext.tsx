@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { PCComponent, mapApiComponent } from '../data/components';
+import type { ProductionStage, StageState } from '../types/production';
 
 export type OrderInfo = {
   name: string;
@@ -26,6 +27,7 @@ type AppContextType = {
 
   // Order
   orderInfo: OrderInfo | null;
+  currentOrderId: number | null;
   orderStatus: number;
   hasActiveOrder: boolean;
   placeOrder: (info: OrderInfo) => Promise<void>;
@@ -51,6 +53,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     { ...emptySelection }
   );
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
   const [orderStatus, setOrderStatus] = useState<number>(0);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
 
@@ -81,12 +84,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     setOrderInfo(info);
+    setCurrentOrderId(orderId);
     setOrderStatus(0);
     setHasActiveOrder(true);
   };
 
   const cancelOrder = () => {
     setOrderInfo(null);
+    setCurrentOrderId(null);
     setOrderStatus(0);
     setHasActiveOrder(false);
   };
@@ -103,6 +108,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then(data => setComponents(data.map(mapApiComponent)));
   }, []);
 
+  useEffect(() => {
+    if (!hasActiveOrder || currentOrderId == null) return;
+
+    const stageToIndex: Record<ProductionStage, number> = {
+      website: 0,
+      'warehouse-receive': 1,
+      'agv-to-assembly': 2,
+      assembly: 3,
+      'agv-to-warehouse': 4,
+      'warehouse-delivery': 4,
+      delivery: 5,
+    };
+
+    const syncStatus = async () => {
+      const response = await fetch(`/api/production/order-status/${currentOrderId}`);
+      if (!response.ok) return;
+
+      const snapshot = await response.json() as {
+        stage: ProductionStage;
+        state: StageState;
+      };
+
+      const index = stageToIndex[snapshot.stage] ?? 0;
+      const isCompleted = snapshot.state === 'completed';
+      const nextIndex = Math.max(0, Math.min(index + (isCompleted ? 1 : 0), ORDER_STATUSES.length - 1));
+      setOrderStatus(nextIndex);
+
+      if (snapshot.stage === 'delivery' && isCompleted) {
+        setHasActiveOrder(false);
+      }
+    };
+
+    void syncStatus();
+    const intervalId = window.setInterval(() => {
+      void syncStatus();
+    }, 2000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [currentOrderId, hasActiveOrder]);
+
   return (
     <AppContext.Provider value={{
       selectedComponents,
@@ -111,6 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       clearConfiguration,
       components,
       orderInfo,
+      currentOrderId,
       orderStatus,
       hasActiveOrder,
       placeOrder,

@@ -24,6 +24,9 @@ public class AssemblyLineController : IAssetController
 
     private TaskCompletionSource<bool>? _healthCheckConfirmation;
     private readonly SemaphoreSlim _runGate = new(1, 1);
+    private bool _isAssembling;
+    private string _lastStatusPayload = string.Empty;
+    private DateTime _lastStatusEventAt = DateTime.MinValue;
 
     static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -148,7 +151,19 @@ public class AssemblyLineController : IAssetController
 
         if (e.ApplicationMessage.Topic == "emulator/status")
         {
-            EmitStepStatus("in-progress", $"Assembly status: {payloadString}");
+            if (_isAssembling)
+            {
+                var now = DateTime.UtcNow;
+                var isDuplicate = string.Equals(_lastStatusPayload, payloadString, StringComparison.Ordinal);
+                var isThrottled = (now - _lastStatusEventAt) < TimeSpan.FromSeconds(2);
+
+                if (!isDuplicate || !isThrottled)
+                {
+                    _lastStatusPayload = payloadString;
+                    _lastStatusEventAt = now;
+                    EmitStepStatus("in-progress", $"Assembly status: {payloadString}");
+                }
+            }
         } 
         else if (e.ApplicationMessage.Topic == "emulator/checkhealth") 
         {
@@ -166,6 +181,8 @@ public class AssemblyLineController : IAssetController
         await _runGate.WaitAsync();
         try 
         {
+            _isAssembling = true;
+
             if (!mqttClient.IsConnected)
             {
                 var connected = await Connect();
@@ -199,7 +216,7 @@ public class AssemblyLineController : IAssetController
 
             if (completedTask == confirmationTask)
             {
-                EmitStepStatus("done", $"Assembly finished");
+                EmitStepStatus("completed", $"Assembly finished");
                 return true;
             }
 
@@ -208,6 +225,7 @@ public class AssemblyLineController : IAssetController
         }
         finally
         {
+            _isAssembling = false;
             _healthCheckConfirmation = null;
             _runGate.Release();
         }

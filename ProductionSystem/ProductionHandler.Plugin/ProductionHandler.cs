@@ -9,10 +9,33 @@ using Common.Persistence;
 using Common.Service;
 using Common.PubSubDataSource;
 
-public class ProductionHandler : IProductionDataSource , IPlugin
+public class ProductionHandler : IProductionDataSource, IPlugin
 {
-    private Dictionary<string, IAssetController> _controllerRegistry;
-    public event EventHandler<ProductionEvent>? EventHandler; // raise event on this, to notify ProductionDataSource
+    private sealed class MachineSnapshot
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Type { get; set; } = "";
+        public string ConnectionStatus { get; set; } = "disconnected";
+        public string State { get; set; } = "offline";
+        public string CurrentTask { get; set; } = "Connection unavailable";
+        public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    private sealed class OrderStatusSnapshot
+    {
+        public int OrderId { get; set; }
+        public string Stage { get; set; } = "website";
+        public string State { get; set; } = "pending";
+        public string Message { get; set; } = "";
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    private readonly Dictionary<string, IAssetController> _controllerRegistry;
+    private readonly Dictionary<string, MachineSnapshot> _machineSnapshots;
+    private readonly Dictionary<int, OrderStatusSnapshot> _orderStatusByOrderId;
+
+    public event EventHandler<ProductionEvent>? EventHandler;
     private OrderDTO? _currentOrder = null;
     private ProductionState _state = ProductionState.idle;
     private readonly SemaphoreSlim _productionGate = new(1, 1);
@@ -21,24 +44,81 @@ public class ProductionHandler : IProductionDataSource , IPlugin
     {
         OrderHandler.Instance.NewOrder += OnNewOrder;
 
-        _controllerRegistry = new Dictionary<string, IAssetController>();
+        _controllerRegistry = new Dictionary<string, IAssetController>(StringComparer.OrdinalIgnoreCase);
+        _machineSnapshots = new Dictionary<string, MachineSnapshot>(StringComparer.OrdinalIgnoreCase);
+        _orderStatusByOrderId = new Dictionary<int, OrderStatusSnapshot>();
 
         foreach (IAssetController controller in GetAssetControllers())
         {
+            bool connected = false;
             controller.ProductionEventHandler += OnProductionEvent;
-            controller.Connect().GetAwaiter().GetResult();
-            _controllerRegistry.Add(controller.GetAssetName, controller);
+
+            try
+            {
+                connected = controller.Connect().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{controller.GetAssetName} connect failed: {ex.Message}");
+            }
+
+            _controllerRegistry[controller.GetAssetName] = controller;
+            RegisterMachineSnapshot(controller.GetAssetName, connected);
         }
 
         _ = PopulateWarehouses();
+    }
+
+    private static string GetMachineType(string source)
+    {
+        if (source.StartsWith("warehouse", StringComparison.OrdinalIgnoreCase))
+            return "warehouse";
+
+        if (source.StartsWith("agv", StringComparison.OrdinalIgnoreCase))
+            return "agv";
+
+        if (source.StartsWith("assembly", StringComparison.OrdinalIgnoreCase))
+            return "assembly";
+
+        return "unknown";
+    }
+
+    private static string GetMachineName(string source)
+    {
+        if (source.StartsWith("warehouse", StringComparison.OrdinalIgnoreCase))
+            return $"Warehouse {source.Replace("warehouse", "")}";
+
+        if (source.StartsWith("agv", StringComparison.OrdinalIgnoreCase))
+            return "AGV Transport";
+
+        if (source.StartsWith("assembly", StringComparison.OrdinalIgnoreCase))
+            return "Assembly Station";
+
+        return source;
+    }
+
+    private void RegisterMachineSnapshot(string source, bool connected)
+    {
+        string id = source.ToLowerInvariant();
+
+        _machineSnapshots[id] = new MachineSnapshot
+        {
+            Id = id,
+            Name = GetMachineName(id),
+            Type = GetMachineType(id),
+            ConnectionStatus = connected ? "connected" : "disconnected",
+            State = connected ? "idle" : "offline",
+            CurrentTask = connected ? "Standby" : "Connection unavailable",
+            LastUpdatedAt = DateTime.UtcNow
+        };
     }
 
     private void Publish(ProductionEvent e)
     {
         EventHandler?.Invoke(this, e);
 
-        var pubSubs = ServiceLocator.Instance.LocateAll<IPubSubDataSource>();
-        if (pubSubs.Count > 0) 
+        IReadOnlyList<IPubSubDataSource> pubSubs = ServiceLocator.Instance.LocateAll<IPubSubDataSource>();
+        if (pubSubs.Count > 0)
             pubSubs[0].Publish(e);
     }
 
@@ -53,12 +133,71 @@ public class ProductionHandler : IProductionDataSource , IPlugin
             Level = level,
             Description = $"{stage}|{state}|{message}"
         });
+
+        if (_currentOrder != null)
+        {
+            _orderStatusByOrderId[_currentOrder.Id] = new OrderStatusSnapshot
+            {
+                OrderId = _currentOrder.Id,
+                Stage = stage,
+                State = state,
+                Message = message,
+                UpdatedAt = DateTime.UtcNow
+            };
+        }
     }
-    
+
+    private void UpdateMachineFromEvent(ProductionEvent e)
+    {
+        string source = (e.Source ?? "").Trim().ToLowerInvariant();
+        string type = (e.Type ?? "").Trim().ToLowerInvariant();
+        string description = (e.Description ?? "").Trim();
+
+        if (string.IsNullOrWhiteSpace(source))
+            return;
+
+        if (!_machineSnapshots.TryGetValue(source, out MachineSnapshot? machine))
+        {
+            machine = new MachineSnapshot
+            {
+                Id = source,
+                Name = GetMachineName(source),
+                Type = GetMachineType(source)
+            };
+
+            _machineSnapshots[source] = machine;
+        }
+
+        machine.ConnectionStatus = "connected";
+        machine.LastUpdatedAt = DateTime.UtcNow;
+        if (!string.IsNullOrWhiteSpace(description))
+            machine.CurrentTask = description;
+
+        if (type == "error" || string.Equals(e.Level, "high", StringComparison.OrdinalIgnoreCase))
+        {
+            machine.State = "error";
+            return;
+        }
+
+        if (type == "step-status")
+        {
+            if (description.Contains("|completed|", StringComparison.OrdinalIgnoreCase))
+                machine.State = "idle";
+            else if (description.Contains("|in-progress|", StringComparison.OrdinalIgnoreCase))
+                machine.State = "working";
+            else if (description.Contains("|error|", StringComparison.OrdinalIgnoreCase))
+                machine.State = "error";
+
+            return;
+        }
+
+        machine.State = "working";
+    }
 
     private void OnProductionEvent(object? sender, ProductionEvent e)
     {
         Console.WriteLine(e);
+        UpdateMachineFromEvent(e);
         Publish(e);
     }
 
@@ -131,18 +270,18 @@ public class ProductionHandler : IProductionDataSource , IPlugin
                 return;
 
             EmitStep("warehouse-receive", "in-progress", "Picking components from warehouses");
-            foreach (var group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
+            foreach (IGrouping<IWarehouseController, Item> group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
                 await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));
             EmitStep("warehouse-receive", "completed", "Components picked");
 
             EmitStep("agv-to-assembly", "in-progress", "Transporting components to assembly");
-            var agvToAssemblyStartedAt = DateTime.UtcNow;
+            DateTime agvToAssemblyStartedAt = DateTime.UtcNow;
             await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
             await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
             await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
             await GetController("agv").SendCommand(new AssetCommand("PutAssemblyOperation", null));
 
-            var agvToAssemblyElapsed = DateTime.UtcNow - agvToAssemblyStartedAt;
+            TimeSpan agvToAssemblyElapsed = DateTime.UtcNow - agvToAssemblyStartedAt;
             if (agvToAssemblyElapsed < TimeSpan.FromSeconds(3))
                 await Task.Delay(TimeSpan.FromSeconds(3) - agvToAssemblyElapsed);
 
@@ -155,12 +294,12 @@ public class ProductionHandler : IProductionDataSource , IPlugin
             await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
 
             EmitStep("agv-to-warehouse", "in-progress", "Picking assembled product and returning to warehouse");
-            var agvReturnStartedAt = DateTime.UtcNow;
+            DateTime agvReturnStartedAt = DateTime.UtcNow;
             await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", _currentOrder.Items));
             await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
             await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
 
-            var agvReturnElapsed = DateTime.UtcNow - agvReturnStartedAt;
+            TimeSpan agvReturnElapsed = DateTime.UtcNow - agvReturnStartedAt;
             if (agvReturnElapsed < TimeSpan.FromSeconds(3))
                 await Task.Delay(TimeSpan.FromSeconds(3) - agvReturnElapsed);
 
@@ -202,7 +341,7 @@ public class ProductionHandler : IProductionDataSource , IPlugin
         }
         else
         {
-            var iAssetController = GetAssetControllers();
+            IReadOnlyList<IAssetController> iAssetController = GetAssetControllers();
             //Dictionary<AssetEnum, IAssetController> controllerRegistry = new Dictionary<AssetEnum, IAssetController>();
 
             foreach (IAssetController assetController in iAssetController)
@@ -226,7 +365,7 @@ public class ProductionHandler : IProductionDataSource , IPlugin
 
     private async Task InsertFinishedProduct()
     {
-        var warehouse5 = GetWarehouseForTray(41);
+        IWarehouseController warehouse5 = GetWarehouseForTray(41);
         bool hasSpace = await warehouse5.SendCommand(new AssetCommand("CheckSpace", null));
         if (!hasSpace)
         {
@@ -239,16 +378,79 @@ public class ProductionHandler : IProductionDataSource , IPlugin
 
     public async Task RefillWarehouse()
     {
-        foreach (var w in GetAssetControllers().OfType<IWarehouseController>().Where(w => w.MaxTray <= 40))
-            await w.SendCommand(new AssetCommand("Refill", null));    
+        IEnumerable<IWarehouseController> warehouses = GetAssetControllers().OfType<IWarehouseController>().Where(w => w.MaxTray <= 40);
+        foreach (IWarehouseController warehouse in warehouses)
+            await warehouse.SendCommand(new AssetCommand("Refill", null));
     }
 
     public async Task PopulateWarehouses()
     {
-        var components = ServiceLocator.Instance.LocateAll<IPersistence>()[0].GetComponents();
-        
-        foreach (var group in components.GroupBy(c => GetWarehouseForTray(c.TrayId)))
-            await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
+        try
+        {
+            Item[] components = ServiceLocator.Instance.LocateAll<IPersistence>()[0].GetComponents();
+
+            foreach (IGrouping<IWarehouseController, Item> group in components.GroupBy(c => GetWarehouseForTray(c.TrayId)))
+                await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"PopulateWarehouses skipped: {ex.Message}");
+        }
+    }
+
+    public object GetQueueSnapshot()
+    {
+        object[] queuedOrders = OrderHandler.Instance.OrderQueue
+            .Select(order => (object)new
+            {
+                orderId = order.Id,
+                createdAt = DateTime.UtcNow,
+                status = "pending",
+                itemTrayIds = order.Items.Select(item => item.TrayId).ToArray()
+            })
+            .ToArray();
+
+        object? currentOrder = _currentOrder == null
+            ? null
+            : new
+            {
+                orderId = _currentOrder.Id,
+                createdAt = DateTime.UtcNow,
+                status = _state == ProductionState.executing
+                    ? "in-progress"
+                    : (_state == ProductionState.paused ? "paused" : "pending"),
+                itemTrayIds = _currentOrder.Items.Select(item => item.TrayId).ToArray()
+            };
+
+        return new
+        {
+            currentOrder,
+            queuedOrders
+        };
+    }
+
+    public object GetMachinesSnapshot()
+    {
+        MachineSnapshot[] machines = _machineSnapshots.Values
+            .OrderBy(machine => machine.Id)
+            .ToArray();
+
+        return new { machines };
+    }
+
+    public object? GetOrderStatusSnapshot(int orderId)
+    {
+        if (!_orderStatusByOrderId.TryGetValue(orderId, out OrderStatusSnapshot? snapshot))
+            return null;
+
+        return new
+        {
+            orderId = snapshot.OrderId,
+            stage = snapshot.Stage,
+            state = snapshot.State,
+            message = snapshot.Message,
+            updatedAt = snapshot.UpdatedAt
+        };
     }
 
     public void PluginStart()

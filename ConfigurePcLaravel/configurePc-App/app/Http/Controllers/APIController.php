@@ -1,13 +1,19 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Order;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 
 class APIController extends Controller
 {
+    private function productionSystemUrl(string $path): string
+    {
+        $base = rtrim((string) env('PRODUCTION_API_URL'), '/');
+        return $base . '/ProductionSystem/' . ltrim($path, '/');
+    }
+
     public function sendCommand(Request $request)
     {
         // Validating incoming request data
@@ -35,7 +41,7 @@ class APIController extends Controller
             'trayIds.*' => 'integer',
         ]);
 
-        $url = env('PRODUCTION_API_URL') . '/ProductionSystem/Command';
+        $url = $this->productionSystemUrl('Command');
 
         $response = Http::post($url, [
             'Name' => 'order',
@@ -47,5 +53,45 @@ class APIController extends Controller
 
         return response()->json($response->json(), $response->status());
 
+    }
+
+    public function getQueueSnapshot()
+    {
+        $response = Http::get($this->productionSystemUrl('Queue'));
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function getMachinesSnapshot()
+    {
+        $response = Http::get($this->productionSystemUrl('Machines'));
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function getOrderStatusSnapshot(int $orderId)
+    {
+        $response = Http::get($this->productionSystemUrl("OrderStatus/{$orderId}"));
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function getProductionLogs(Request $request)
+    {
+        $limit = min(max((int) $request->query('limit', 200), 1), 1000);
+
+        $logs = Log::with(['level', 'source', 'type'])
+            ->orderByDesc('timestamp')
+            ->limit($limit)
+            ->get()
+            ->map(function (Log $log) {
+                return [
+                    'id' => 'LOG-' . $log->id,
+                    'timestamp' => $log->timestamp,
+                    'description' => (string) $log->description,
+                    'level' => strtolower((string) optional($log->level)->name),
+                    'source' => (string) optional($log->source)->name,
+                    'type' => (string) optional($log->type)->name,
+                ];
+            });
+
+        return response()->json(['logs' => $logs]);
     }
 }

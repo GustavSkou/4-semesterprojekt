@@ -175,14 +175,17 @@ export function OperatorDashboardPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400 text-sm">Order ID</span>
-                <span className="text-white font-mono text-sm">{currentOrder.id}</span>
+                <span className="text-white font-mono text-sm">#{currentOrder.orderId}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 text-sm">Status</span>
+                <span className="text-xs text-zinc-200 uppercase tracking-wide">{currentOrder.status}</span>
               </div>
               <div className="border-t border-zinc-800 pt-2 space-y-1.5">
                 {[
-                  ['CPU',     currentOrder.cpu],
-                  ['GPU',     currentOrder.gpu],
-                  ['RAM',     currentOrder.ram],
-                  ['Storage', currentOrder.storage],
+                  ['Created', currentOrder.createdAt.toLocaleString()],
+                  ['Tray count', String(currentOrder.itemTrayIds.length)],
+                  ['Tray IDs', currentOrder.itemTrayIds.join(', ') || '-'],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between gap-2">
                     <span className="text-xs text-zinc-500">{label}</span>
@@ -207,9 +210,9 @@ export function OperatorDashboardPage() {
           </div>
           <div className="space-y-2 max-h-36 overflow-y-auto">
             {queue.slice(0, 3).map(order => (
-              <div key={order.id} className="rounded-lg p-2.5 bg-zinc-800">
-                <p className="text-sm text-white font-mono">{order.id}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{order.cpu}</p>
+              <div key={order.orderId} className="rounded-lg p-2.5 bg-zinc-800">
+                <p className="text-sm text-white font-mono">#{order.orderId}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{order.itemTrayIds.length} tray items</p>
               </div>
             ))}
             {queue.length > 3 && (
