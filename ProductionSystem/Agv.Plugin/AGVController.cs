@@ -103,7 +103,7 @@ public partial class AGVController : IAssetController
     // pick
     private async Task<bool> PickUp(AssetCommand command)
     {
-        foreach (var item in command.Items)
+        foreach (var item in command.Items ?? Array.Empty<Item>())
         {
             await ExecuteCommand(command.Name);
             await WhileDoing();

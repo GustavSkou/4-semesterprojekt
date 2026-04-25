@@ -103,7 +103,7 @@ public sealed class ServiceLocator
             {
                 asm = Assembly.LoadFrom(dll);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 continue;
             }

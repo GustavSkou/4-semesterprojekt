@@ -5,6 +5,7 @@ using PersistencePlugin.Models;
 using System.Collections.Concurrent;
 using System.Linq;
 using Common.Service;
+using System.Net.ServerSentEvents;
 
 namespace PersistencePlugin;
 
@@ -44,8 +45,11 @@ public class DataHandler : IPersistence, IPlugin
             processingTaskRunning = true;
             using var dbContext = new ProductionDbContext(_dbOptions);
 
-            while(productionEvents.TryDequeue(out ProductionEvent productionEvent)) 
+            while(productionEvents.TryDequeue(out ProductionEvent? productionEvent)) 
             {
+                if (productionEvent == null)
+                    continue;
+
                 if (string.IsNullOrEmpty(productionEvent.Source))
                     continue;
 
@@ -106,21 +110,23 @@ public class DataHandler : IPersistence, IPlugin
     
 
     public Item[] GetComponents()
-    {
-        return Array.Empty<Item>();
-        
+    {        
         try
         {
-            using var db = new ProductionDbContext(_dbOptions);
+            using ProductionDbContext db = new ProductionDbContext(_dbOptions);
 
-            return db.components
-                .OrderBy(c => c.id)
-                .Select((c, i) => new Item
+            Item[] items = db.components
+                .Where(c => c.tray_id != null)
+                .OrderBy(c => c.tray_id)
+                .Select(c => new Item
                 {
-                    TrayId = c.tray_id ?? (i + 1),
+                    TrayId = c.tray_id!.Value,
                     Name = c.name
                 })
                 .ToArray();
+
+            Console.WriteLine($"Persistence GetComponents loaded {items.Length} components.");
+            return items;
         }
         catch (Exception ex)
         {

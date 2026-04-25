@@ -109,7 +109,7 @@ function StatusNode({
 }
 
 export function OrderStatusPage() {
-  const { hasActiveOrder, orderInfo, currentOrderId, orderStatus, selectedComponents } = useApp();
+  const { hasActiveOrder, orderInfo, currentOrderId, orderStatus, queuePosition, selectedComponents } = useApp();
   const navigate = useNavigate();
 
   const selectedList = categories
@@ -156,6 +156,12 @@ export function OrderStatusPage() {
             </p>
             {currentOrderId != null && (
               <p className="text-xs mt-1 text-slate-500">Order ID: #{currentOrderId}</p>
+            )}
+            {queuePosition != null && queuePosition > 0 && (
+              <p className="text-xs mt-1 text-amber-400">Queue position: #{queuePosition}</p>
+            )}
+            {queuePosition === 0 && (
+              <p className="text-xs mt-1 text-green-400">Now in production</p>
             )}
           </div>
         </div>

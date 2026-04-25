@@ -8,8 +8,10 @@ using Common.ProductionDataSource;
 using Common.Persistence;
 using Common.Service;
 using Common.PubSubDataSource;
+using System.Reflection.PortableExecutable;
+using System.Data.Common;
 
-public class ProductionHandler : IProductionDataSource, IPlugin
+public class ProductionHandler : IProductionDataSource, IProductionSnapshotSource, IPlugin
 {
     private sealed class MachineSnapshot
     {
@@ -334,8 +336,7 @@ public class ProductionHandler : IProductionDataSource, IPlugin
 
     private IAssetController GetController(string assetName)
     {
-        IAssetController controller;
-        if (_controllerRegistry.TryGetValue(assetName, out controller))
+        if (_controllerRegistry.TryGetValue(assetName, out IAssetController? controller))
         {
             return controller;
         }
@@ -398,59 +399,103 @@ public class ProductionHandler : IProductionDataSource, IPlugin
         }
     }
 
-    public object GetQueueSnapshot()
+    public QueueSnapshotDto GetQueueSnapshot()
     {
-        object[] queuedOrders = OrderHandler.Instance.OrderQueue
-            .Select(order => (object)new
-            {
-                orderId = order.Id,
-                createdAt = DateTime.UtcNow,
-                status = "pending",
-                itemTrayIds = order.Items.Select(item => item.TrayId).ToArray()
-            })
-            .ToArray();
+        QueueOrderSnapshotDto[] queuedOrders =
+            OrderHandler.Instance.OrderQueue
+            .Select(order => new QueueOrderSnapshotDto
+                {
+                    orderId = order.Id,
+                    createdAt = DateTime.UtcNow,
+                    status = "pending",
+                    itemTrayIds = order.Items.Select(item => item.TrayId).ToArray()
+                }).ToArray();
 
-        object? currentOrder = _currentOrder == null
+
+        QueueOrderSnapshotDto? currentOrder = _currentOrder == null
             ? null
-            : new
+            : new QueueOrderSnapshotDto
             {
                 orderId = _currentOrder.Id,
                 createdAt = DateTime.UtcNow,
-                status = _state == ProductionState.executing
-                    ? "in-progress"
+                status = _state == ProductionState.executing 
+                    ? "in-progress" 
                     : (_state == ProductionState.paused ? "paused" : "pending"),
                 itemTrayIds = _currentOrder.Items.Select(item => item.TrayId).ToArray()
             };
 
-        return new
+        return new QueueSnapshotDto
         {
-            currentOrder,
-            queuedOrders
+            currentOrder = currentOrder,
+            queuedOrders = queuedOrders
         };
     }
 
-    public object GetMachinesSnapshot()
+    public MachineSnapshotDto[] GetMachinesSnapshot()
     {
-        MachineSnapshot[] machines = _machineSnapshots.Values
+        MachineSnapshotDto[] machines = _machineSnapshots.Values
             .OrderBy(machine => machine.Id)
-            .ToArray();
-
-        return new { machines };
+            .Select(machine => new MachineSnapshotDto
+            {
+                id = machine.Id,
+                name = machine.Name,
+                type = machine.Type,
+                connectionStatus = machine.ConnectionStatus,
+                state = machine.State,
+                currentTask = machine.CurrentTask,
+                lastUpdatedAt = machine.LastUpdatedAt
+            }).ToArray();
+        return machines;
     }
 
-    public object? GetOrderStatusSnapshot(int orderId)
+    public OrderStatusSnapshotDto? GetOrderStatusSnapshot(int orderId)
     {
-        if (!_orderStatusByOrderId.TryGetValue(orderId, out OrderStatusSnapshot? snapshot))
-            return null;
-
-        return new
+        if (_orderStatusByOrderId.TryGetValue(orderId, out OrderStatusSnapshot? snapshot))
         {
-            orderId = snapshot.OrderId,
-            stage = snapshot.Stage,
-            state = snapshot.State,
-            message = snapshot.Message,
-            updatedAt = snapshot.UpdatedAt
-        };
+            return new OrderStatusSnapshotDto
+            {
+                orderId = snapshot.OrderId,
+                stage = snapshot.Stage,
+                state = snapshot.State,
+                message = snapshot.Message,
+                updatedAt = snapshot.UpdatedAt
+            };   
+        }
+
+        if (_currentOrder != null && _currentOrder.Id == orderId)
+        {
+            string currentState = _state == ProductionState.executing
+                ? "in-progress"
+                : (_state == ProductionState.paused ? "error" : "pending");
+
+            return new OrderStatusSnapshotDto
+            {
+                orderId = _currentOrder.Id,
+                stage = "website",
+                state = currentState,
+                message = _state == ProductionState.executing
+                    ? "Order accepted and waiting for first production step"
+                    : (_state == ProductionState.paused
+                        ? "Production paused"
+                        : "Order accepted"),
+                updatedAt = DateTime.UtcNow
+            };
+        }
+
+        OrderDTO? queuedOrder = OrderHandler.Instance.OrderQueue.FirstOrDefault(order => order.Id == orderId);
+        if (queuedOrder != null)
+        {
+            return new OrderStatusSnapshotDto
+            {
+                orderId = queuedOrder.Id,
+                stage = "website",
+                state = "pending",
+                message = "Waiting in production queue",
+                updatedAt = DateTime.UtcNow
+            };
+        }
+
+        return null;
     }
 
     public void PluginStart()

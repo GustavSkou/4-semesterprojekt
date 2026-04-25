@@ -8,5 +8,5 @@ public class Warehouse5Controller : WarehouseController.WarehouseController
     public override int MinTray => 41;
     public override int MaxTray => 50;
 
-    protected override bool ClearOnConnect => true;
+    protected override bool ClearOnConnect => false;
 }

@@ -32,7 +32,7 @@ public class ProductionDataHandler : IPlugin, IMonitorDataSource
     private void OnProductionEvent(object? obj, ProductionEvent e)
     {
         Console.WriteLine("ProductionDataHandler : ProductionEvent");
-        MonitorDataSource.Invoke(this, e.Type);
+        MonitorDataSource?.Invoke(this, e.Type ?? string.Empty);
         persistenceService.SaveProductionEvent(e);
     }
 

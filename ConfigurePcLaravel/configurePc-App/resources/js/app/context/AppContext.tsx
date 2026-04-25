@@ -29,6 +29,7 @@ type AppContextType = {
   orderInfo: OrderInfo | null;
   currentOrderId: number | null;
   orderStatus: number;
+  queuePosition: number | null;
   hasActiveOrder: boolean;
   placeOrder: (info: OrderInfo) => Promise<void>;
   cancelOrder: () => void;
@@ -55,6 +56,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
   const [orderStatus, setOrderStatus] = useState<number>(0);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
 
   const selectComponent = (component: PCComponent) => {
@@ -93,6 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setOrderInfo(null);
     setCurrentOrderId(null);
     setOrderStatus(0);
+    setQueuePosition(null);
     setHasActiveOrder(false);
   };
 
@@ -135,7 +138,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextIndex = Math.max(0, Math.min(index + (isCompleted ? 1 : 0), ORDER_STATUSES.length - 1));
       setOrderStatus(nextIndex);
 
+      const queueResponse = await fetch('/api/production/queue');
+      if (queueResponse.ok) {
+        const queueSnapshot = await queueResponse.json() as {
+          currentOrder: { orderId: number } | null;
+          queuedOrders: Array<{ orderId: number }>;
+        };
+
+        if (queueSnapshot.currentOrder?.orderId === currentOrderId) {
+          setQueuePosition(0);
+        } else {
+          const indexInQueue = queueSnapshot.queuedOrders.findIndex(order => order.orderId === currentOrderId);
+          setQueuePosition(indexInQueue >= 0 ? indexInQueue + 1 : null);
+        }
+      }
+
       if (snapshot.stage === 'delivery' && isCompleted) {
+        setQueuePosition(null);
         setHasActiveOrder(false);
       }
     };
@@ -160,6 +179,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       orderInfo,
       currentOrderId,
       orderStatus,
+      queuePosition,
       hasActiveOrder,
       placeOrder,
       cancelOrder,

@@ -58,6 +58,27 @@ const stageOrder: ProductionStage[] = [
   'delivery'
 ];
 
+function flowFromSnapshot(stage: ProductionStage, state: StageState): ProductionFlow {
+  const flow: ProductionFlow = { ...emptyFlow };
+  const stageIndex = stageOrder.indexOf(stage);
+
+  if (stageIndex < 0) return flow;
+
+  for (let i = 0; i < stageIndex; i += 1) {
+    flow[stageOrder[i]] = 'completed';
+  }
+
+  flow[stage] = state;
+  return flow;
+}
+
+const OPERATOR_AUTH_STORAGE_KEY = 'operator:isAuthenticated';
+
+function readPersistedOperatorAuth(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(OPERATOR_AUTH_STORAGE_KEY) === 'true';
+}
+
 function updateStage(flow: ProductionFlow, stage: ProductionStage, next: ProductionFlow[ProductionStage]): ProductionFlow {
   const current = flow[stage];
   const idx = stageOrder.indexOf(stage);
@@ -76,7 +97,7 @@ function updateStage(flow: ProductionFlow, stage: ProductionStage, next: Product
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function ProductionProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated]     = useState(false);
+  const [isAuthenticated, setIsAuthenticated]     = useState<boolean>(() => readPersistedOperatorAuth());
   const [productionStatus, setProductionStatus]   = useState<ProductionStatus>('running');
   const [currentOrder, setCurrentOrder]           = useState<QueueOrder | null>(null);
   const [queue, setQueue]                         = useState<QueueOrder[]>([]);
@@ -195,6 +216,7 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
 
     if (email === VALID_EMAIL && password === VALID_PASSWORD) {
       setIsAuthenticated(true);
+      window.localStorage.setItem(OPERATOR_AUTH_STORAGE_KEY, 'true');
       addLog('success', 'Auth', 'Login', `Operator logged in: ${email}`);
       return true;
     }
@@ -203,6 +225,7 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setIsAuthenticated(false);
+    window.localStorage.removeItem(OPERATOR_AUTH_STORAGE_KEY);
     addLog('info', 'Auth', 'Logout', 'Operator logged out');
   }, [addLog]);
 
@@ -250,6 +273,33 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
       clearInterval(logsInterval);
     };
   }, [fetchLogs, fetchMachines, fetchQueue]);
+
+  useEffect(() => {
+    if (!currentOrder) return;
+
+    const syncFlowFromCurrentOrder = async () => {
+      const response = await fetch(`/api/production/order-status/${currentOrder.orderId}`);
+      if (!response.ok) return;
+
+      const snapshot = await response.json() as {
+        stage: ProductionStage;
+        state: StageState;
+        message?: string;
+      };
+
+      setProductionFlow(flowFromSnapshot(snapshot.stage, snapshot.state));
+      setStatusMessage(snapshot.message ?? `${snapshot.stage} ${snapshot.state}`);
+    };
+
+    void syncFlowFromCurrentOrder();
+    const intervalId = window.setInterval(() => {
+      void syncFlowFromCurrentOrder();
+    }, 2000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [currentOrder?.orderId]);
   
   useEffect(() => {
     const timers: number[] = [];

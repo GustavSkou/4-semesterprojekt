@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CommonProductionHandler;
 using Common.Util;
-using Common.Service;
-using System.Reflection;
+using Common.ProductionDataSource;
 
 namespace APIController.Controllers;
 
@@ -59,31 +58,46 @@ public class Controller : ControllerBase
     [HttpGet("Queue")]
     public ActionResult<object> GetQueueSnapshot()
     {
-        object? snapshot = InvokeProductionHandler("GetQueueSnapshot");
-        if (snapshot == null)
-            return StatusCode(503, new { message = "Production handler unavailable" });
+        IProductionSnapshotSource? snapshotSource = GetSnapshotSource();
+        if (snapshotSource == null)
+            return StatusCode(503, new { message = "Production snapshot source unavailable" });
 
+        QueueSnapshotDto snapshot = snapshotSource.GetQueueSnapshot();
         return Ok(snapshot);
     }
 
     [HttpGet("Machines")]
     public ActionResult<object> GetMachinesSnapshot()
     {
-        object? snapshot = InvokeProductionHandler("GetMachinesSnapshot");
-        if (snapshot == null)
-            return StatusCode(503, new { message = "Production handler unavailable" });
+        IProductionSnapshotSource? snapshotSource = GetSnapshotSource();
+        if (snapshotSource == null)
+            return StatusCode(503, new { message = "Production snapshot source unavailable" });
 
-        return Ok(snapshot);
+        MachineSnapshotDto[] snapshot = snapshotSource.GetMachinesSnapshot();
+        return Ok( new { machines = snapshot });
     }
 
     [HttpGet("OrderStatus/{orderId:int}")]
     public ActionResult<object> GetOrderStatusSnapshot(int orderId)
     {
-        object? snapshot = InvokeProductionHandler("GetOrderStatusSnapshot", orderId);
+        IProductionSnapshotSource? snapshotSource = GetSnapshotSource();
+        if (snapshotSource == null)            
+            return StatusCode(503, new { message = "Production snapshot source unavailable" });
+
+        OrderStatusSnapshotDto? snapshot = snapshotSource.GetOrderStatusSnapshot(orderId);
         if (snapshot == null)
             return NotFound(new { message = "Order status not found" });
 
         return Ok(snapshot);
+    }
+
+    private IProductionSnapshotSource? GetSnapshotSource()
+    {
+        IReadOnlyList<IProductionSnapshotSource> sources = 
+            ServiceLocator.Instance.LocateAll<IProductionSnapshotSource>();
+        if (sources.Count == 0)
+            return null;
+        return sources[0];
     }
 
     private IReadOnlyList<ICommandable> GetCommandableServices()
@@ -104,21 +118,5 @@ public class Controller : ControllerBase
     private IReadOnlyList<IStopable> GetStopableServices()
     {
         return ServiceLocator.Instance.LocateAll<IStopable>();
-    }
-
-    private object? InvokeProductionHandler(string methodName, params object[] args)
-    {
-        IPlugin? handler = ServiceLocator.Instance
-            .LocateAll<IPlugin>()
-            .FirstOrDefault(o => string.Equals(o.GetType().Name, "ProductionHandler", StringComparison.Ordinal));
-
-        if (handler == null)
-            return null;
-
-        MethodInfo? method = handler.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
-        if (method == null)
-            return null;
-
-        return method.Invoke(handler, args);
     }
 }

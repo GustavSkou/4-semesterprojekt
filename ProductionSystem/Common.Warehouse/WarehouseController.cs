@@ -131,12 +131,18 @@ public abstract class WarehouseController : IWarehouseController
             }
 
             case "Populate":
+            {
+                List<int> emptyIds = await GetEmptyTrayIds();
                 foreach (var item in command.Items ?? [])
                 {
+                    if (!emptyIds.Contains(item.TrayId))
+                        continue;
+
                     await Client.InsertItemAsync(ToLocalTray(item.TrayId), item.Name ?? $"Item {item.TrayId}");
                     Console.WriteLine($"Populated tray {item.TrayId} with {item.Name}");
                 }
                 return true;
+            }
 
             default:
                 return true;
@@ -160,8 +166,30 @@ public abstract class WarehouseController : IWarehouseController
     public virtual async Task<bool> Connect()
     {
         if (ClearOnConnect)
-            await SendCommand(new AssetCommand("Clear", null));
+        {
+            bool isSeeded = await HasExpectedSeedInFirstTray();
+            if (!isSeeded)
+                await SendCommand(new AssetCommand("Clear", null));
+        }
+
         return true;
+    }
+
+    private async Task<bool> HasExpectedSeedInFirstTray()
+    {
+        string json = await Client.GetInventoryAsync();
+        JsonElement tray = JsonDocument.Parse(json)
+            .RootElement
+            .GetProperty("Inventory")
+            .EnumerateArray()
+            .FirstOrDefault(x => x.GetProperty("Id").GetInt32() == 1);
+
+        if (tray.ValueKind == JsonValueKind.Undefined)
+            return false;
+
+        string? content = tray.GetProperty("Content").GetString();
+        string expected = $"Item {MinTray}";
+        return string.Equals(content, expected, StringComparison.OrdinalIgnoreCase);
     }
 
     Task<bool> IAssetController.Disconnect()
