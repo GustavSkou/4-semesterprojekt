@@ -21,5 +21,19 @@ Content-Type: application/json
 }
 
 
+###
+
+POST {{APIController.Plugin_HostAddress}}/ProductionSystem/Start
+
+
+###
+
+POST {{APIController.Plugin_HostAddress}}/ProductionSystem/Stop
+
+
+###
+
+POST {{APIController.Plugin_HostAddress}}/ProductionSystem/Reset
+
 
 ###
