@@ -231,23 +231,72 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
 
   // ── Production controls ───────────────────────────────────────────────────
 
-  const stopProduction = useCallback(() => {
+  const stopProduction = useCallback(async () => {
+    const response = await fetch('/api/production/stop', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  
+    if (!response.ok) {
+      addLog('error', 'Control', 'Stop', 'Failed to stop production');
+      return;
+    }
+  
     setProductionStatus('stopped');
-    setMachines(prev => prev.map(m => ({ ...m, state: 'idle', currentTask: 'Production stopped' })));
+    setMachines(prev => prev.map(m => ({
+      ...m,
+      state: 'error',
+      currentTask: 'Production stopped by operator',
+    })));
+  
     addLog('warning', 'Control', 'Stop', 'Production stopped by operator');
   }, [addLog]);
 
-  const resetProduction = useCallback(() => {
+
+  const resetProduction = useCallback(async () => {
+    const response = await fetch('/api/production/reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  
+    if (!response.ok) {
+      addLog('error', 'Control', 'Reset', 'Failed to reset production');
+      return;
+    }
+  
+    // UI reset (keep your existing logic)
     setProductionStatus('reset');
     setCurrentOrder(null);
     setProductionFlow({ ...emptyFlow });
-    setMachines(prev => prev.map(m => ({ ...m, state: 'idle', currentTask: 'Standby' })));
+  
+    setMachines(prev => prev.map(m => ({
+      ...m,
+      state: 'idle',
+      currentTask: 'Standby',
+    })));
+  
     addLog('info', 'Control', 'Reset', 'Production system reset');
   }, [addLog]);
 
-  const resumeProduction = useCallback(() => {
+  const resumeProduction = useCallback(async () => {
+    const response = await fetch('/api/production/start', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  
+    if (!response.ok) {
+      addLog('error', 'Control', 'Start', 'Failed to start production');
+      return;
+    }
+  
     setProductionStatus('running');
-    addLog('success', 'Control', 'Resume', 'Production resumed');
+    addLog('success', 'Control', 'Start', 'Production started');
   }, [addLog]);
 
   useEffect(() => {

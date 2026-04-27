@@ -31,19 +31,23 @@ public class RequestHandler : IPlugin, IResumable, IStopable, IResetable, IComma
         }
     }
 
+    public Task Start()
+    {
+        return GetProductionHandler().StartProduction();
+    }
     public Task Reset()
     {
-        throw new NotImplementedException();
+        return GetProductionHandler().ResetProduction();
     }
 
     public Task Resume()
     {
-        throw new NotImplementedException();
+        return GetProductionHandler().StartProduction();
     }
 
     public Task Stop()
     {
-        throw new NotImplementedException();
+        return GetProductionHandler().StopProduction();
     }
 
     private ProductionHandler GetProductionHandler()

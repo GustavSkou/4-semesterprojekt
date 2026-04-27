@@ -13,6 +13,27 @@ class APIController extends Controller
         $base = rtrim((string) env('PRODUCTION_API_URL'), '/');
         return $base . '/ProductionSystem/' . ltrim($path, '/');
     }
+    
+    public function startProduction()
+    {
+        $response = Http::post($this->productionSystemUrl('Start'));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function stopProduction()
+    {
+        $response = Http::post($this->productionSystemUrl('Stop'));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function resetProduction()
+    {
+        $response = Http::post($this->productionSystemUrl('Reset'));
+
+        return response()->json($response->json(), $response->status());
+    }
 
     public function sendCommand(Request $request)
     {

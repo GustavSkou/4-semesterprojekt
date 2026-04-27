@@ -4,5 +4,6 @@ internal enum ProductionState
 {
     idle,
     paused,
-    executing
+    executing,
+    stopped
 }
