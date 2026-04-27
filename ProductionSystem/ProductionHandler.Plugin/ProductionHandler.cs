@@ -40,6 +40,8 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
     public event EventHandler<ProductionEvent>? EventHandler;
     private OrderDTO? _currentOrder = null;
     private ProductionState _state = ProductionState.idle;
+
+    private bool _stopRequested = false;
     private readonly SemaphoreSlim _productionGate = new(1, 1);
 
     public ProductionHandler()
@@ -232,7 +234,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
         }
     }
 
-    private async Task StartProduction()
+    public async Task StartProduction()
     {
         await _productionGate.WaitAsync();
         try
@@ -242,6 +244,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
             Console.WriteLine($"Starting production! order: {_currentOrder.Id}");
             _state = ProductionState.executing;
+            _stopRequested = false;
 
             EmitStep("website", "in-progress", $"Order {_currentOrder.Id} received");
             await Task.Delay(3000);
@@ -271,10 +274,16 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
             if (_currentOrder == null)
                 return;
 
+            if (_stopRequested)
+                return;
+
             EmitStep("warehouse-receive", "in-progress", "Picking components from warehouses");
             foreach (IGrouping<IWarehouseController, Item> group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
                 await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));
             EmitStep("warehouse-receive", "completed", "Components picked");
+
+            if (_stopRequested)
+                return;
 
             EmitStep("agv-to-assembly", "in-progress", "Transporting components to assembly");
             DateTime agvToAssemblyStartedAt = DateTime.UtcNow;
@@ -289,9 +298,15 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
             EmitStep("agv-to-assembly", "completed", "Components delivered to assembly");
 
+            if (_stopRequested)
+                return;
+
             EmitStep("assembly", "in-progress", "Assembly started");
             await GetController("assembly").SendCommand(new AssetCommand("start", null));
             EmitStep("assembly", "completed", "Assembly finished");
+
+            if (_stopRequested)
+                return;
 
             await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
 
@@ -307,14 +322,27 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
             EmitStep("agv-to-warehouse", "completed", "Returned to warehouse");
 
+            if (_stopRequested)
+                return;
+
             EmitStep("warehouse-delivery", "in-progress", "Inserting finished product into warehouse");
             await InsertFinishedProduct();
             await Task.Delay(3000);
             EmitStep("warehouse-delivery", "completed", "Inserted into warehouse");
 
+            if (_stopRequested)
+                return;
+
             EmitStep("delivery", "in-progress", "Preparing outbound delivery");
+
+            if (_stopRequested)
+                return;
+
             await Task.Delay(1000);
             EmitStep("delivery", "completed", "Out for delivery");
+
+            if (_stopRequested)
+                return;
         }
         catch (Exception ex)
         {
@@ -497,10 +525,49 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
         return null;
     }
+    
+    public Task StopProduction()
+    {
+        _stopRequested = true;
+        _state = ProductionState.stopped;
+
+        EmitStep("production", "error", "Production stopped by operator", "high");
+
+        foreach (MachineSnapshot machine in _machineSnapshots.Values)
+        {
+            machine.State = "error";
+            machine.CurrentTask = "Production stopped by operator";
+            machine.LastUpdatedAt = DateTime.UtcNow;
+        }
+
+        Console.WriteLine("Production stopped by operator");
+
+        return Task.CompletedTask;
+    }
+
+    public Task ResetProduction()
+    {
+        _stopRequested = false;
+        _state = ProductionState.idle;
+        _currentOrder = null;
+
+        foreach (MachineSnapshot machine in _machineSnapshots.Values)
+        {
+            machine.State = "idle";
+            machine.CurrentTask = "Waiting for production";
+            machine.LastUpdatedAt = DateTime.UtcNow;
+        }
+
+        EmitStep("production", "reset", "Production reset by operator", "medium");
+
+        Console.WriteLine("Production reset by operator");
+
+        return Task.CompletedTask;
+    }
 
     public void PluginStart()
     {
-        
+
     }
 
     public void PluginDispose()

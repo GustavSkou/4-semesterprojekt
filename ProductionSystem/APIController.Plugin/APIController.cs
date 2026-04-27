@@ -27,6 +27,22 @@ public class Controller : ControllerBase
         return Ok(command);
     }
 
+    [HttpPost("Start")]
+    public async Task<IActionResult> PostStart()
+    {
+        IReadOnlyList<IResumable> services = GetResumeableServices();
+
+        if (services.Count == 0)
+            return StatusCode(503, new { message = "No resumable production service found" });
+
+        foreach (IResumable service in services)
+        {
+            await service.Resume();
+        }
+
+        return Ok(new { message = "Production started" });
+    }
+
     [HttpPost("Resume")]
     public IActionResult PostResume()
     {
@@ -35,18 +51,34 @@ public class Controller : ControllerBase
     }
 
     [HttpPost("Stop")]
-    public IActionResult PostStop()
+    public async Task<IActionResult> PostStop()
     {
-        GetStopableServices();
-        throw new NotImplementedException();
+        IReadOnlyList<IStopable> services = GetStopableServices();
+        if (services.Count == 0)
+            return StatusCode(503, new { message = "No stopable production service found" });
 
+        foreach (IStopable service in services)
+        {
+            await service.Stop();
+        }
+
+        return Ok(new { message = "Production stopped" });
     }
 
     [HttpPost("Reset")]
-    public IActionResult PostReset()
+    public async Task<IActionResult> PostReset()
     {
-        GetResetableServices();
-        throw new NotImplementedException();
+        IReadOnlyList<IResetable> services = GetResetableServices();
+
+        if (services.Count == 0)
+            return StatusCode(503, new { message = "No resetable production service found" });
+
+        foreach (IResetable service in services)
+        {
+            await service.Reset();
+        }
+
+        return Ok(new { message = "Production reset" });
     }
 
     [HttpGet("TEST")]

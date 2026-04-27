@@ -15,6 +15,9 @@ use App\Http\Controllers\ComponentController;
 */
 
 Route::post('/production/command', [APIController::class, 'sendCommand']);
+Route::post('/production/start', [APIController::class, 'startProduction']);
+Route::post('/production/stop', [APIController::class, 'stopProduction']);
+Route::post('/production/reset', [APIController::class, 'resetProduction']);
 Route::post('/orders', [APIController::class, 'sendOrder']);
 Route::get('/production/queue', [APIController::class, 'getQueueSnapshot']);
 Route::get('/production/machines', [APIController::class, 'getMachinesSnapshot']);
