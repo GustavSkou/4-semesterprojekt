@@ -45,8 +45,6 @@ public partial class AGVController
             try
             {
                 status = await ReadStatus();
-                Console.WriteLine(status.battery);
-                // Console.WriteLine(status.state);
             }
             catch
             {
@@ -61,7 +59,7 @@ public partial class AGVController
                 ProductionEventHandler?.Invoke(this, new Common.Data.ProductionEvent()
                 {
                     DateAndTime = ConvertTimestampToDateTime(status.timeStamp),
-                    Description = "agv is charged",
+                    Description = $"agv is charged to {status.battery}, returning to work",
                     Source = GetAssetName,
                     Type = "command",
                     Level = "low"
