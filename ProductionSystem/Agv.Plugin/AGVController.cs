@@ -38,7 +38,7 @@ public partial class AGVController : IAssetController
         switch (command.Name) 
         {
             case "MoveToChargerOperation":
-                return await MoveToCharing(command);
+                return await MoveToCharger(command);
 
             case "MoveToAssemblyOperation":
                 return await MoveToAssembly(command);
@@ -92,12 +92,11 @@ public partial class AGVController : IAssetController
         return await WhileDoing();
     }
 
-    
-
-    private async Task<bool> MoveToCharing(AssetCommand command)
+    private async Task<bool> MoveToCharger(AssetCommand command)
     {
+
         await ExecuteCommand(command.Name);
-        return await WhileDoing();
+        return await WhileCharging();
     }
 
     // pick

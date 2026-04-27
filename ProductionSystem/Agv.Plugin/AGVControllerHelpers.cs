@@ -17,10 +17,60 @@ public partial class AGVController
         if (status.state != 1)
             return false;
 
+        if (programName != "MoveToChargerOperation")
+        {
+            if (status.battery < 20)
+            {
+                ProductionEventHandler?.Invoke(this, new Common.Data.ProductionEvent() {
+                    DateAndTime = ConvertTimestampToDateTime(status.timeStamp),
+                    Description = $"agv battery level is {status.battery}, moving to charging station",
+                    Source = GetAssetName,
+                    Type = "command",
+                    Level = "low"
+                });
+                await MoveToCharger(new AssetCommand("MoveToChargerOperation", null));
+            }
+        }
 
         await LoadProgramAsync(programName);
         ExecuteCommandEvent(programName);
         return true;
+    }
+
+    private async Task<bool> WhileCharging()
+    {
+        StatusDTO? status;
+        while (true)
+        {
+            try
+            {
+                status = await ReadStatus();
+                Console.WriteLine(status.battery);
+                // Console.WriteLine(status.state);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (status == null)
+                return false;
+
+            if (status.battery >= 90)
+            {
+                ProductionEventHandler?.Invoke(this, new Common.Data.ProductionEvent()
+                {
+                    DateAndTime = ConvertTimestampToDateTime(status.timeStamp),
+                    Description = "agv is charged",
+                    Source = GetAssetName,
+                    Type = "command",
+                    Level = "low"
+                });
+                return true;
+            }
+
+            await Task.Delay(250);
+        }
     }
 
     private async Task<bool> WhileDoing()
@@ -31,6 +81,7 @@ public partial class AGVController
             try
             {
                 status = await ReadStatus();
+                Console.WriteLine(status.battery);
                 // Console.WriteLine(status.state);
             }
             catch
@@ -56,6 +107,11 @@ public partial class AGVController
 
             if (status.state == 3)
                 return false;
+
+            if (status.battery < 10)
+            {
+                
+            }
 
             await Task.Delay(250);
         }
