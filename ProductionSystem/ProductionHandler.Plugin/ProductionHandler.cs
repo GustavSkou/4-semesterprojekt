@@ -8,8 +8,6 @@ using Common.ProductionDataSource;
 using Common.Persistence;
 using Common.Service;
 using Common.PubSubDataSource;
-using System.Reflection.PortableExecutable;
-using System.Data.Common;
 
 public class ProductionHandler : IProductionDataSource, IProductionSnapshotSource, IPlugin
 {
@@ -39,6 +37,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
     public event EventHandler<ProductionEvent>? EventHandler;
     private OrderDTO? _currentOrder = null;
+    public OrderDTO? CurrentOrder {get {return _currentOrder;}}
     private ProductionState _state = ProductionState.idle;
 
     private bool _stopRequested = false;
@@ -274,75 +273,15 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
             if (_currentOrder == null)
                 return;
 
-            if (_stopRequested)
-                return;
+            foreach (var prodTask in ProductionSteps.GetSteps(EmitStep, this)) {
+                if (_stopRequested)
+                    return;
 
-            EmitStep("warehouse-receive", "in-progress", "Picking components from warehouses");
-            foreach (IGrouping<IWarehouseController, Item> group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
-                await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));
-            EmitStep("warehouse-receive", "completed", "Components picked");
-
-            if (_stopRequested)
-                return;
-
-            EmitStep("agv-to-assembly", "in-progress", "Transporting components to assembly");
-            DateTime agvToAssemblyStartedAt = DateTime.UtcNow;
-            await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
-            await GetController("agv").SendCommand(new AssetCommand("PickWarehouseOperation", _currentOrder.Items));
-            await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
-            await GetController("agv").SendCommand(new AssetCommand("PutAssemblyOperation", null));
-
-            TimeSpan agvToAssemblyElapsed = DateTime.UtcNow - agvToAssemblyStartedAt;
-            if (agvToAssemblyElapsed < TimeSpan.FromSeconds(3))
-                await Task.Delay(TimeSpan.FromSeconds(3) - agvToAssemblyElapsed);
-
-            EmitStep("agv-to-assembly", "completed", "Components delivered to assembly");
-
-            if (_stopRequested)
-                return;
-
-            EmitStep("assembly", "in-progress", "Assembly started");
-            await GetController("assembly").SendCommand(new AssetCommand("start", null));
-            EmitStep("assembly", "completed", "Assembly finished");
-
-            if (_stopRequested)
-                return;
-
-            await GetController("agv").SendCommand(new AssetCommand("MoveToAssemblyOperation", null));
-
-            EmitStep("agv-to-warehouse", "in-progress", "Picking assembled product and returning to warehouse");
-            DateTime agvReturnStartedAt = DateTime.UtcNow;
-            await GetController("agv").SendCommand(new AssetCommand("PickAssemblyOperation", _currentOrder.Items));
-            await GetController("agv").SendCommand(new AssetCommand("MoveToStorageOperation", null));
-            await GetController("agv").SendCommand(new AssetCommand("PutWarehouseOperation", null));
-
-            TimeSpan agvReturnElapsed = DateTime.UtcNow - agvReturnStartedAt;
-            if (agvReturnElapsed < TimeSpan.FromSeconds(3))
-                await Task.Delay(TimeSpan.FromSeconds(3) - agvReturnElapsed);
-
-            EmitStep("agv-to-warehouse", "completed", "Returned to warehouse");
-
-            if (_stopRequested)
-                return;
-
-            EmitStep("warehouse-delivery", "in-progress", "Inserting finished product into warehouse");
-            await InsertFinishedProduct();
-            await Task.Delay(3000);
-            EmitStep("warehouse-delivery", "completed", "Inserted into warehouse");
-
-            if (_stopRequested)
-                return;
-
-            EmitStep("delivery", "in-progress", "Preparing outbound delivery");
-
-            if (_stopRequested)
-                return;
-
-            await Task.Delay(1000);
-            EmitStep("delivery", "completed", "Out for delivery");
-
-            if (_stopRequested)
-                return;
+                prodTask.emitStep.Invoke();
+                bool prodTaskResult = await prodTask.prodStep.Invoke();
+                if (!prodTaskResult)
+                    throw new Exception("A production step failed");                    
+            }
         }
         catch (Exception ex)
         {
@@ -350,6 +289,13 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
             _state = ProductionState.paused;
             Console.WriteLine("Error Production paused");
         }
+    }
+
+    public async Task<bool> GetItemsReady()
+    {
+        foreach (IGrouping<IWarehouseController, Item> group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
+            await group.Key.SendCommand(new AssetCommand("PickItem", group.ToArray()));
+        return true;
     }
 
     /// <summary>
@@ -362,7 +308,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
         return ServiceLocator.Instance.LocateAll<IAssetController>();
     }
 
-    private IAssetController GetController(string assetName)
+    public IAssetController GetController(string assetName)
     {
         if (_controllerRegistry.TryGetValue(assetName, out IAssetController? controller))
         {
@@ -392,7 +338,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
             .First(w => trayId >= w.MinTray && trayId <= w.MaxTray);
     }
 
-    private async Task InsertFinishedProduct()
+    public async Task<bool> InsertFinishedProduct()
     {
         IWarehouseController warehouse5 = GetWarehouseForTray(41);
         bool hasSpace = await warehouse5.SendCommand(new AssetCommand("CheckSpace", null));
@@ -400,9 +346,10 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
         {
             Console.WriteLine("Warehouse 5 is full... Production paused. Resume when items are shipped.");
             _state = ProductionState.paused;
-            return;
+            return true;
         }
         await warehouse5.SendCommand(new AssetCommand("InsertItem", null));
+        return true;
     }
 
     public async Task RefillWarehouse()
