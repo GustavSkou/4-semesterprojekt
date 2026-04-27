@@ -79,7 +79,7 @@ public partial class AGVController
             try
             {
                 status = await ReadStatus();
-                Console.WriteLine(status.battery);
+                //Console.WriteLine(status.battery);
                 // Console.WriteLine(status.state);
             }
             catch
