@@ -2,12 +2,15 @@
 
 using Common.Data;
 using CommonAssetController;
+using Common.Util;
 using System.Text.Json;
 using ServiceReference1;
 
 public abstract class WarehouseController : IWarehouseController
 {
     public event EventHandler<ProductionEvent>? ProductionEventHandler;
+    private static readonly SemaphoreSlim GlobalClearLock = new(1, 1);
+    private static bool globalSeedClearDone;
 
     private  EmulatorServiceClient Client => new EmulatorServiceClient(
         EmulatorServiceClient.EndpointConfiguration.BasicHttpBinding_IEmulatorService, Url);
@@ -167,12 +170,44 @@ public abstract class WarehouseController : IWarehouseController
     {
         if (ClearOnConnect)
         {
+            if (string.Equals(GetAssetName, "warehouse1", StringComparison.OrdinalIgnoreCase))
+            {
+                bool warehouse1Seeded = await HasExpectedSeedInFirstTray();
+                if (warehouse1Seeded)
+                {
+                    await ClearAllWarehouses();
+                    return true;
+                }
+            }
+
             bool isSeeded = await HasExpectedSeedInFirstTray();
             if (!isSeeded)
                 await SendCommand(new AssetCommand("Clear", null));
         }
 
         return true;
+    }
+
+    private static async Task ClearAllWarehouses()
+    {
+        await GlobalClearLock.WaitAsync();
+        try
+        {
+            if (globalSeedClearDone)
+                return;
+
+            IReadOnlyList<IWarehouseController> warehouses =
+                ServiceLocator.Instance.LocateAll<IWarehouseController>();
+
+            foreach (IWarehouseController warehouse in warehouses.OrderBy(w => w.MinTray))
+                await warehouse.SendCommand(new AssetCommand("Clear", null));
+
+            globalSeedClearDone = true;
+        }
+        finally
+        {
+            GlobalClearLock.Release();
+        }
     }
 
     private async Task<bool> HasExpectedSeedInFirstTray()
