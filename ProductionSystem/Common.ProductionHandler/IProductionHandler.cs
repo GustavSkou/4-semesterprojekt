@@ -20,3 +20,9 @@ public interface IStopable
     public Task Stop();
 }
 
+public interface IProductionSnapshotSource
+{
+    QueueSnapshotDto GetQueueSnapshot();
+    MachineSnapshotDto[] GetMachinesSnapshot();
+    OrderStatusSnapshotDto? GetOrderStatusSnapshot(int orderId);
+}
