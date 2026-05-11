@@ -15,9 +15,20 @@ public class DataHandler : IPersistence, IPlugin
     private bool processingTaskRunning;
 
     public DataHandler()
+        : this(null)
+    {
+    }
+
+    public DataHandler(DbContextOptions<ProductionDbContext>? dbOptions)
     {
         //Console.WriteLine("[DataHandler instance]");
         productionEvents = new ConcurrentQueue<ProductionEvent>();
+
+        if (dbOptions != null)
+        {
+            _dbOptions = dbOptions;
+            return;
+        }
 
         // this should probably be move to a config file :)
         var connectionString = "Host=localhost;Port=5433;Database=configurepc;Username=configurepc;Password=configurepc";
@@ -107,14 +118,14 @@ public class DataHandler : IPersistence, IPlugin
 
     public Item[] GetComponents()
     {
-        return Array.Empty<Item>();
-        
         try
         {
             using var db = new ProductionDbContext(_dbOptions);
-
-            return db.components
+            var components = db.components
                 .OrderBy(c => c.id)
+                .ToList();
+
+            return components
                 .Select((c, i) => new Item
                 {
                     TrayId = c.tray_id ?? (i + 1),

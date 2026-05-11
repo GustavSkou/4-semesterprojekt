@@ -49,11 +49,15 @@
       public function test_order_endpoint_forwards_to_production_api(): void
       {
           $this->setProductionApiUrl('http://example.test');
+          $this->seed();
           Http::fake([
               '*' => Http::response(['ok' => true], 200),
           ]);
 
           $this->postJson('/api/orders', [
+              'name' => 'Jane Doe',
+              'email' => 'jane@example.com',
+              'address' => 'Main Street 1',
               'id' => 1,
               'trayIds' => [10, 11],
             ])
@@ -94,9 +98,16 @@
       public function test_orders_forwards_correct_payload(): void
       {
           $this->setProductionApiUrl('http://example.test');
+          $this->seed();
           Http::fake();
 
-          $this->postJson('/api/orders', ['id' => 1, 'trayIds' => [10, 11]])
+          $this->postJson('/api/orders', [
+              'name' => 'Jane Doe',
+              'email' => 'jane@example.com',
+              'address' => 'Main Street 1',
+              'id' => 1,
+              'trayIds' => [10, 11],
+          ])
               ->assertStatus(200);
 
           Http::assertSent(function ($request) {

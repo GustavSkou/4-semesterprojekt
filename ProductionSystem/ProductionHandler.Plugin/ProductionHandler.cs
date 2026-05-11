@@ -16,14 +16,43 @@ public class ProductionHandler : IProductionDataSource , IPlugin
     private OrderDTO? _currentOrder = null;
     private ProductionState _state = ProductionState.idle;
     private readonly SemaphoreSlim _productionGate = new(1, 1);
+    private readonly IReadOnlyList<IAssetController> _assetControllers;
+    private readonly IReadOnlyList<IPersistence> _persistenceServices;
+    private readonly IReadOnlyList<IPubSubDataSource> _pubSubServices;
+    private readonly Func<TimeSpan, Task> _delay;
+    private readonly bool _subscribedToOrderHandler;
 
     public ProductionHandler()
+        : this(
+            assetControllers: null,
+            persistenceServices: null,
+            pubSubServices: null,
+            delay: null,
+            subscribeToOrderHandler: true,
+            populateWarehousesOnStart: true)
     {
-        OrderHandler.Instance.NewOrder += OnNewOrder;
+    }
+
+    public ProductionHandler(
+        IEnumerable<IAssetController>? assetControllers,
+        IEnumerable<IPersistence>? persistenceServices = null,
+        IEnumerable<IPubSubDataSource>? pubSubServices = null,
+        Func<TimeSpan, Task>? delay = null,
+        bool subscribeToOrderHandler = true,
+        bool populateWarehousesOnStart = true)
+    {
+        _assetControllers = assetControllers?.ToList() ?? GetAssetControllersFromServices();
+        _persistenceServices = persistenceServices?.ToList() ?? GetPersistenceServices();
+        _pubSubServices = pubSubServices?.ToList() ?? GetPubSubServices();
+        _delay = delay ?? Task.Delay;
+        _subscribedToOrderHandler = subscribeToOrderHandler;
+
+        if (_subscribedToOrderHandler)
+            OrderHandler.Instance.NewOrder += OnNewOrder;
 
         _controllerRegistry = new Dictionary<string, IAssetController>();
 
-        foreach (IAssetController controller in GetAssetControllers())
+        foreach (IAssetController controller in _assetControllers)
         {
             controller.ProductionEventHandler += OnProductionEvent;
             _controllerRegistry.Add(controller.GetAssetName, controller);
@@ -40,16 +69,16 @@ public class ProductionHandler : IProductionDataSource , IPlugin
             }
         }
 
-        _ = PopulateWarehouses();
+        if (populateWarehousesOnStart && _persistenceServices.Count > 0)
+            _ = PopulateWarehouses();
     }
 
     private void Publish(ProductionEvent e)
     {
         EventHandler?.Invoke(this, e);
 
-        var pubSubs = ServiceLocator.Instance.LocateAll<IPubSubDataSource>();
-        if (pubSubs.Count > 0) 
-            pubSubs[0].Publish(e);
+        if (_pubSubServices.Count > 0)
+            _pubSubServices[0].Publish(e);
     }
 
     private void EmitStep(string stage, string state, string message, string level = "low")
@@ -62,6 +91,18 @@ public class ProductionHandler : IProductionDataSource , IPlugin
             Type = "step-status",
             Level = level,
             Description = $"{stage}|{state}|{message}"
+        });
+    }
+
+    private void EmitControl(string action, string message, string level = "medium")
+    {
+        Publish(new ProductionEvent
+        {
+            DateAndTime = DateTime.Now,
+            Source = "control",
+            Type = "control",
+            Level = level,
+            Description = $"{action}|{message}"
         });
     }
     
@@ -89,43 +130,40 @@ public class ProductionHandler : IProductionDataSource , IPlugin
         }
     }
 
-    private void OnProductionComplete(ProductionEvent e)
-    {
-        _state = ProductionState.idle;
-        Publish(e);
-
-        if (OrderHandler.Instance.OrderQueue.Count > 0)
-        {
-            _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
-            _ = StartProduction();
-        }
-    }
-
     private async Task StartProduction()
     {
         await _productionGate.WaitAsync();
         try
         {
-            if (_currentOrder == null)
-                return;
-
-            Console.WriteLine($"Starting production! order: {_currentOrder.Id}");
-            _state = ProductionState.executing;
-
-            EmitStep("website", "in-progress", $"Order {_currentOrder.Id} received");
-            await Task.Delay(3000);
-            EmitStep("website", "completed", $"Order {_currentOrder.Id} validated");
-
-            await HandleProduction();
-
-            OnProductionComplete(new ProductionEvent
+            while (_currentOrder != null)
             {
-                DateAndTime = DateTime.Now,
-                Description = $"Order {_currentOrder.Id} completed",
-                Source = "production handler",
-                Type = "order completed",
-                Level = "low"
-            });
+                var completedOrderId = _currentOrder.Id;
+
+                Console.WriteLine($"Starting production! order: {completedOrderId}");
+                _state = ProductionState.executing;
+
+                EmitStep("website", "in-progress", $"Order {completedOrderId} received");
+                await _delay(TimeSpan.FromSeconds(3));
+                EmitStep("website", "completed", $"Order {completedOrderId} validated");
+
+                var completedSuccessfully = await HandleProduction();
+                if (!completedSuccessfully)
+                    return;
+
+                _state = ProductionState.idle;
+                Publish(new ProductionEvent
+                {
+                    DateAndTime = DateTime.Now,
+                    Description = $"Order {completedOrderId} completed",
+                    Source = "production handler",
+                    Type = "order completed",
+                    Level = "low"
+                });
+
+                _currentOrder = OrderHandler.Instance.OrderQueue.Count > 0
+                    ? OrderHandler.Instance.OrderQueue.Dequeue()
+                    : null;
+            }
         }
         finally
         {
@@ -133,12 +171,12 @@ public class ProductionHandler : IProductionDataSource , IPlugin
         }
     }
 
-    private async Task HandleProduction()
+    private async Task<bool> HandleProduction()
     {
         try
         {
             if (_currentOrder == null)
-                return;
+                return false;
 
             EmitStep("warehouse-receive", "in-progress", "Picking components from warehouses");
             foreach (var group in _currentOrder.Items.GroupBy(i => GetWarehouseForTray(i.TrayId)))
@@ -154,7 +192,7 @@ public class ProductionHandler : IProductionDataSource , IPlugin
 
             var agvToAssemblyElapsed = DateTime.UtcNow - agvToAssemblyStartedAt;
             if (agvToAssemblyElapsed < TimeSpan.FromSeconds(3))
-                await Task.Delay(TimeSpan.FromSeconds(3) - agvToAssemblyElapsed);
+                await _delay(TimeSpan.FromSeconds(3) - agvToAssemblyElapsed);
 
             EmitStep("agv-to-assembly", "completed", "Components delivered to assembly");
 
@@ -172,24 +210,28 @@ public class ProductionHandler : IProductionDataSource , IPlugin
 
             var agvReturnElapsed = DateTime.UtcNow - agvReturnStartedAt;
             if (agvReturnElapsed < TimeSpan.FromSeconds(3))
-                await Task.Delay(TimeSpan.FromSeconds(3) - agvReturnElapsed);
+                await _delay(TimeSpan.FromSeconds(3) - agvReturnElapsed);
 
             EmitStep("agv-to-warehouse", "completed", "Returned to warehouse");
 
             EmitStep("warehouse-delivery", "in-progress", "Inserting finished product into warehouse");
-            await InsertFinishedProduct();
-            await Task.Delay(3000);
+            var insertedFinishedProduct = await InsertFinishedProduct();
+            if (!insertedFinishedProduct)
+                return false;
+            await _delay(TimeSpan.FromSeconds(3));
             EmitStep("warehouse-delivery", "completed", "Inserted into warehouse");
 
             EmitStep("delivery", "in-progress", "Preparing outbound delivery");
-            await Task.Delay(1000);
+            await _delay(TimeSpan.FromSeconds(1));
             EmitStep("delivery", "completed", "Out for delivery");
+            return true;
         }
         catch (Exception ex)
         {
             EmitStep("production", "error", ex.ToString(), "high");
             _state = ProductionState.paused;
             Console.WriteLine("Error Production paused");
+            return false;
         }
     }
 
@@ -200,7 +242,22 @@ public class ProductionHandler : IProductionDataSource , IPlugin
     /// <returns></returns>
     private IReadOnlyList<IAssetController> GetAssetControllers()
     {
+        return _assetControllers;
+    }
+
+    private static IReadOnlyList<IAssetController> GetAssetControllersFromServices()
+    {
         return ServiceLocator.Instance.LocateAll<IAssetController>();
+    }
+
+    private static IReadOnlyList<IPersistence> GetPersistenceServices()
+    {
+        return ServiceLocator.Instance.LocateAll<IPersistence>();
+    }
+
+    private static IReadOnlyList<IPubSubDataSource> GetPubSubServices()
+    {
+        return ServiceLocator.Instance.LocateAll<IPubSubDataSource>();
     }
 
     private IAssetController GetController(string assetName)
@@ -234,7 +291,7 @@ public class ProductionHandler : IProductionDataSource , IPlugin
             .First(w => trayId >= w.MinTray && trayId <= w.MaxTray);
     }
 
-    private async Task InsertFinishedProduct()
+    private async Task<bool> InsertFinishedProduct()
     {
         var warehouse5 = GetWarehouseForTray(41);
         bool hasSpace = await warehouse5.SendCommand(new AssetCommand("CheckSpace", null));
@@ -242,9 +299,10 @@ public class ProductionHandler : IProductionDataSource , IPlugin
         {
             Console.WriteLine("Warehouse 5 is full... Production paused. Resume when items are shipped.");
             _state = ProductionState.paused;
-            return;
+            return false;
         }
         await warehouse5.SendCommand(new AssetCommand("InsertItem", null));
+        return true;
     }
 
     public async Task RefillWarehouse()
@@ -255,10 +313,47 @@ public class ProductionHandler : IProductionDataSource , IPlugin
 
     public async Task PopulateWarehouses()
     {
-        var components = ServiceLocator.Instance.LocateAll<IPersistence>()[0].GetComponents();
+        var persistence = _persistenceServices.FirstOrDefault();
+        if (persistence == null)
+            return;
+
+        var components = persistence.GetComponents();
         
         foreach (var group in components.GroupBy(c => GetWarehouseForTray(c.TrayId)))
             await group.Key.SendCommand(new AssetCommand("Populate", group.ToArray()));
+    }
+
+    public Task Stop()
+    {
+        _state = ProductionState.paused;
+        EmitControl("stop", "Production stopped by operator", "warning");
+        return Task.CompletedTask;
+    }
+
+    public Task Reset()
+    {
+        OrderHandler.Instance.OrderQueue.Clear();
+        _currentOrder = null;
+        _state = ProductionState.idle;
+        EmitControl("reset", "Production reset by operator");
+        return Task.CompletedTask;
+    }
+
+    public Task Resume()
+    {
+        if (_state == ProductionState.executing)
+            return Task.CompletedTask;
+
+        _state = ProductionState.idle;
+        EmitControl("resume", "Production resumed by operator", "low");
+
+        if (_currentOrder == null && OrderHandler.Instance.OrderQueue.Count > 0)
+            _currentOrder = OrderHandler.Instance.OrderQueue.Dequeue();
+
+        if (_currentOrder != null)
+            _ = StartProduction();
+
+        return Task.CompletedTask;
     }
 
     public void PluginStart()
@@ -268,6 +363,7 @@ public class ProductionHandler : IProductionDataSource , IPlugin
 
     public void PluginDispose()
     {
-        
+        if (_subscribedToOrderHandler)
+            OrderHandler.Instance.NewOrder -= OnNewOrder;
     }
 }

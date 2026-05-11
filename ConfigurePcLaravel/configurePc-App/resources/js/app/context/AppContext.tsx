@@ -77,7 +77,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: orderId, trayIds }),
+      body: JSON.stringify({
+        id: orderId,
+        trayIds,
+        name: info.name,
+        email: info.email,
+        address: info.address,
+      }),
     });
 
     setOrderInfo(info);
