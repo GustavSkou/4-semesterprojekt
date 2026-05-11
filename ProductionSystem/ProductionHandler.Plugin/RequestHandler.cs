@@ -31,10 +31,6 @@ public class RequestHandler : IPlugin, IResumable, IStopable, IResetable, IComma
         }
     }
 
-    public Task Start()
-    {
-        return GetProductionHandler().StartProduction();
-    }
     public Task Reset()
     {
         return GetProductionHandler().ResetProduction();

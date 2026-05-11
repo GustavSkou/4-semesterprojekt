@@ -8,6 +8,8 @@ using Common.ProductionDataSource;
 using Common.Persistence;
 using Common.Service;
 using Common.PubSubDataSource;
+using CommonProductionHandler;
+
 
 public class ProductionHandler : IProductionDataSource, IProductionSnapshotSource, IPlugin
 {
@@ -37,7 +39,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
     public event EventHandler<ProductionEvent>? EventHandler;
     private OrderDTO? _currentOrder = null;
-    public OrderDTO? CurrentOrder {get {return _currentOrder;}}
+    public OrderDTO? CurrentOrder { get { return _currentOrder; } }
     private ProductionState _state = ProductionState.idle;
 
     private bool _stopRequested = false;
@@ -273,14 +275,15 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
             if (_currentOrder == null)
                 return;
 
-            foreach (var prodTask in ProductionSteps.GetSteps(EmitStep, this)) {
+            foreach (var prodTask in ProductionSteps.GetSteps(EmitStep, this))
+            {
                 if (_stopRequested)
                     return;
 
                 prodTask.emitStep.Invoke();
                 bool prodTaskResult = await prodTask.prodStep.Invoke();
                 if (!prodTaskResult)
-                    throw new Exception("A production step failed");                    
+                    throw new Exception("A production step failed");
             }
         }
         catch (Exception ex)
@@ -379,12 +382,12 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
         QueueOrderSnapshotDto[] queuedOrders =
             OrderHandler.Instance.OrderQueue
             .Select(order => new QueueOrderSnapshotDto
-                {
-                    orderId = order.Id,
-                    createdAt = DateTime.UtcNow,
-                    status = "pending",
-                    itemTrayIds = order.Items.Select(item => item.TrayId).ToArray()
-                }).ToArray();
+            {
+                orderId = order.Id,
+                createdAt = DateTime.UtcNow,
+                status = "pending",
+                itemTrayIds = order.Items.Select(item => item.TrayId).ToArray()
+            }).ToArray();
 
 
         QueueOrderSnapshotDto? currentOrder = _currentOrder == null
@@ -393,8 +396,8 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
             {
                 orderId = _currentOrder.Id,
                 createdAt = DateTime.UtcNow,
-                status = _state == ProductionState.executing 
-                    ? "in-progress" 
+                status = _state == ProductionState.executing
+                    ? "in-progress"
                     : (_state == ProductionState.paused ? "paused" : "pending"),
                 itemTrayIds = _currentOrder.Items.Select(item => item.TrayId).ToArray()
             };
@@ -434,7 +437,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
                 state = snapshot.State,
                 message = snapshot.Message,
                 updatedAt = snapshot.UpdatedAt
-            };   
+            };
         }
 
         if (_currentOrder != null && _currentOrder.Id == orderId)
@@ -472,7 +475,7 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
         return null;
     }
-    
+
     public Task StopProduction()
     {
         _stopRequested = true;
@@ -519,6 +522,6 @@ public class ProductionHandler : IProductionDataSource, IProductionSnapshotSourc
 
     public void PluginDispose()
     {
-        
+
     }
 }

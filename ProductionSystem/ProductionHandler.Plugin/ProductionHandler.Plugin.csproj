@@ -13,5 +13,7 @@
     <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\Common.Persistence\Common.Persistence.csproj" />
     <ProjectReference Include="..\Common.PubSubDataSource\Common.PubSubDataSource.csproj" />
+
+  
   </ItemGroup>
 </Project>

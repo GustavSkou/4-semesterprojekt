@@ -12,5 +12,4 @@
   <projectReference Include="..\Common\Common.csproj" />
   <projectReference Include="..\Common.MonitorDataSource\Common.MonitorDataSource.csproj" />
   </ItemGroup>
-
 </Project>
