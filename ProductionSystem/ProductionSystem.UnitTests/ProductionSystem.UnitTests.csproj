@@ -14,5 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ProductionHandler.Plugin\ProductionHandler.Plugin.csproj" />
+    <ProjectReference Include="..\Assembly.Plugin\Assembly.Plugin.csproj" />
+    <ProjectReference Include="..\Warehouse1.Plugin\Warehouse1.Plugin.csproj" />
+    <ProjectReference Include="..\Common.AssetController\Common.AssetController.csproj" />
   </ItemGroup>
 </Project>

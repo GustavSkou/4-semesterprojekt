@@ -78,4 +78,34 @@ public class OrderHandlerTests
     {
         OrderHandler.Instance.OrderQueue.Clear();
     }
+
+
+// This test supports the user story about processing computers in the correct queue order.
+// It verifies that when multiple order commands are added to the queue,
+// they are processed in FIFO order (First In, First Out).
+// The test creates two different order commands,
+// adds them to the queue,
+// and checks that they are dequeued in the same order.
+// This ensures that the production system processes orders
+// in the correct sequence as required by the queue handling requirements.
+    [Fact]
+    public void AddOrderCommandToQueue_KeepsOrdersInCorrectOrder()
+    {
+        ClearQueue();
+
+        var firstCommand = CreateOrderCommand(1, new[] { 10, 11 });
+        var secondCommand = CreateOrderCommand(2, new[] { 20, 21 });
+
+        OrderHandler.Instance.AddOrderCommandToQueue(firstCommand);
+        OrderHandler.Instance.AddOrderCommandToQueue(secondCommand);
+
+        Assert.Equal(2, OrderHandler.Instance.OrderQueue.Count);
+
+        var firstOrder = OrderHandler.Instance.OrderQueue.Dequeue();
+        var secondOrder = OrderHandler.Instance.OrderQueue.Dequeue();
+
+        Assert.Equal(1, firstOrder.Id);
+        Assert.Equal(2, secondOrder.Id);
+    }
+
 }
