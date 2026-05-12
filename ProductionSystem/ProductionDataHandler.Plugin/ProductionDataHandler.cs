@@ -9,18 +9,22 @@ using Common.MonitorDataSource;
 
 public class ProductionDataHandler : IPlugin, IMonitorDataSource
 {
-    IPersistence persistenceService;
+    IPersistence? persistenceService;
 
     public event EventHandler<string>? MonitorDataSource;
 
     public ProductionDataHandler()
     {
-        persistenceService = GetPersistenceServices()[0];
+        try
+        {
+            persistenceService = GetPersistenceServices()[0];
+        } catch (Exception) {
+            persistenceService = null;
+        }
 
         // if there exists multipule prod data sources, they all invoke the onprodevent method
         foreach (var dataSource in GetProductionDataSources())
         {
-            Console.WriteLine("setup datasource");
             dataSource.EventHandler += OnProductionEvent;
         }
     }
@@ -31,9 +35,9 @@ public class ProductionDataHandler : IPlugin, IMonitorDataSource
 
     private void OnProductionEvent(object? obj, ProductionEvent e)
     {
-        Console.WriteLine("ProductionDataHandler : ProductionEvent");
         MonitorDataSource?.Invoke(this, e.Type ?? string.Empty);
-        persistenceService.SaveProductionEvent(e);
+        
+        persistenceService?.SaveProductionEvent(e);
     }
 
     private IReadOnlyList<IProductionDataSource> GetProductionDataSources()

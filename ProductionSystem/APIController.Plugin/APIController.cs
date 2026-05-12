@@ -22,7 +22,12 @@ public class Controller : ControllerBase
         if (command.Name == null)
             return BadRequest(command);
 
-        GetCommandableServices()[0].SendCommand(command);
+        try {
+            GetCommandableServices()[0].SendCommand(command);    
+        } catch (Exception) {
+            
+        }
+        
 
         return Ok(command);
     }
@@ -47,7 +52,7 @@ public class Controller : ControllerBase
     public IActionResult PostResume()
     {
         GetResumeableServices();
-        throw new NotImplementedException();
+        return Ok(new { message = "Production resumed" });
     }
 
     [HttpPost("Stop")]

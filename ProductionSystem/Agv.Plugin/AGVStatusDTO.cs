@@ -15,4 +15,14 @@ internal class StatusDTO
 
 	[JsonPropertyName("timeStamp")]
 	public string timeStamp { get; set; } = string.Empty;
+
+	public State? State
+	{
+		get { 
+			if (state > 0 && state <= 3)
+				return (State)state;
+			else 
+				return null;
+		}
+	}
 }

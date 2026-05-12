@@ -9,31 +9,28 @@ public partial class AGVController
 {
     private async Task<bool> ExecuteCommand(string programName)
     {
-        var status = await ReadStatus();
+        StatusDTO? status = await ReadStatus();
 
         if (status == null)
             return false;
 
-        if (status.state != 1)
+        if (status.State != State.idle)
             return false;
 
-        if (programName != "MoveToChargerOperation")
-        {
-            if (status.battery < 20)
-            {
-                ProductionEventHandler?.Invoke(this, new Common.Data.ProductionEvent() {
-                    DateAndTime = ConvertTimestampToDateTime(status.timeStamp),
-                    Description = $"agv battery level is {status.battery}, moving to charging station",
-                    Source = GetAssetName,
-                    Type = "command",
-                    Level = "low"
-                });
-                await MoveToCharger(new AssetCommand("MoveToChargerOperation", null));
-            }
+        if (programName != "MoveToChargerOperation" && status.battery < 20) {
+            ProductionEventHandler?.Invoke(this, new Common.Data.ProductionEvent() {
+                DateAndTime = ConvertTimestampToDateTime(status.timeStamp),
+                Description = $"agv battery level is {status.battery}, moving to charging station",
+                Source = GetAssetName,
+                Type = "command",
+                Level = "low"
+            });
+            await MoveToCharger(new AssetCommand("MoveToChargerOperation", null));   
         }
 
-        await LoadProgramAsync(programName);
         ExecuteCommandEvent(programName);
+        await LoadProgramAsync(programName);
+        await LoadExecutingStateAsync();
         return true;
     }
 
@@ -66,7 +63,6 @@ public partial class AGVController
                 });
                 return true;
             }
-
             await Task.Delay(250);
         }
     }
@@ -90,7 +86,7 @@ public partial class AGVController
             if (status == null)
                 return false;
 
-            if (status.state == 1)
+            if (status.State == State.idle)
             {
                 ProductionEventHandler?.Invoke(this, new Common.Data.ProductionEvent()
                 {
@@ -103,7 +99,7 @@ public partial class AGVController
                 return true;
             }
 
-            if (status.state == 3)
+            if (status.State == State.charging)
                 return false;
 
             if (status.battery < 10)
@@ -125,10 +121,9 @@ public partial class AGVController
 
     private async Task LoadProgramAsync(string programName)
     {
-        var payload = new Dictionary<string, string>
-        {
+        var payload = new Dictionary<string, string> {
             ["Program name"] = programName,
-            ["State"] = "1"
+            ["State"] = $"{(int)State.idle}"
         };
 
         var json = JsonSerializer.Serialize(payload);
@@ -136,13 +131,13 @@ public partial class AGVController
 
         using var response = await httpClient.PutAsync($"{baseUrl}/status", content);
         response.EnsureSuccessStatusCode();
-        await LoadExecutingStateAsync();
+
+        
     }
     private async Task LoadExecutingStateAsync()
     {
-        var payload = new Dictionary<string, string>
-        {
-            ["State"] = "2"
+        var payload = new Dictionary<string, string> {
+            ["State"] = $"{(int)State.executing}"
         };
 
         var json = JsonSerializer.Serialize(payload);

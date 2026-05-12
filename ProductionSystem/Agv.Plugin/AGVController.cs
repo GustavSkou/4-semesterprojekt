@@ -94,7 +94,6 @@ public partial class AGVController : IAssetController
 
     private async Task<bool> MoveToCharger(AssetCommand command)
     {
-
         await ExecuteCommand(command.Name);
         return await WhileCharging();
     }
@@ -135,13 +134,3 @@ public partial class AGVController : IAssetController
         });
     }
 }
-
-/*
-    MoveToChargerOperation  - Move the AGV to the charging station.
-    MoveToAssemblyOperation - Move the AGV to the assembly station.
-    MoveToStorageOperation  - Move the AGV to the warehouse.
-    PutAssemblyOperation    - Activate the robot arm to pick payload from AGV and place it at the assembly station.
-    PickAssemblyOperation   - Activate the robot arm to pick payload at the assembly station and place it on the AGV.
-    PickWarehouseOperation  - Activate the robot arm to pick payload from the warehouse outlet.
-    PutWarehouseOperation   - Activate the robot arm to place an item at the warehouse inlet.
-*/
